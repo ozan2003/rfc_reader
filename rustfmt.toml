@@ -1,0 +1,13 @@
+unstable_features = true
+
+binop_separator = "Back"
+brace_style = "AlwaysNextLine"
+control_brace_style = "AlwaysNextLine"
+chain_width = 45
+
+wrap_comments = true
+comment_width = 80
+
+format_strings = true
+
+empty_item_single_line = false

@@ -1,0 +1,5 @@
+[alias]
+lint = "clippy -- -W clippy::pedantic -W clippy::correctness -W clippy::style -W clippy::complexity -W clippy::perf"
+
+[build]
+rustflags = ["-C", "target-cpu=native", "-Z", "threads=8"]
