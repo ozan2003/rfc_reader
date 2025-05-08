@@ -32,7 +32,7 @@ impl RfcClient
     pub fn new() -> Self
     {
         let client = Client::builder()
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(30)) // Default timeout is 30 secs
             .build()
             .expect("Failed to create HTTP client");
 
@@ -47,7 +47,7 @@ impl RfcClient
     ///
     /// # Returns
     ///
-    /// The RFC content as a string.
+    /// The RFC content as a text.
     ///
     /// # Errors
     ///
@@ -55,11 +55,11 @@ impl RfcClient
     pub async fn fetch_rfc(&self, rfc_number: u32) -> Result<String>
     {
         // RFC documents are available in TXT format
-        let url = format!("{RFC_BASE_URL}{rfc_number}.txt");
+        let rfc_url = format!("{RFC_BASE_URL}{rfc_number}.txt");
 
         let response = self
             .client
-            .get(&url)
+            .get(&rfc_url)
             .send() // Send the GET request to the url.
             .await
             .context(format!("Failed to fetch RFC {rfc_number}"))?;
@@ -83,7 +83,7 @@ impl RfcClient
     ///
     /// # Returns
     ///
-    /// The RFC index as a string.
+    /// The RFC index as a text.
     ///
     /// # Errors
     ///
@@ -92,11 +92,11 @@ impl RfcClient
     pub async fn fetch_rfc_index(&self) -> Result<String>
     {
         // RFC index is available at a different URL
-        let url = "https://www.rfc-editor.org/rfc-index.txt";
+        let rfc_url: &'static str = "https://www.rfc-editor.org/rfc-index.txt";
 
         let response = self
             .client
-            .get(url)
+            .get(rfc_url)
             .send()
             .await
             .context("Failed to fetch RFC index")?;
