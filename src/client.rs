@@ -1,3 +1,6 @@
+//! Client module for fetching RFCs from the RFC Editor's website.
+//!
+//! Handles network requests for the RFC reader application.
 use anyhow::{Context, Result};
 use reqwest::Client;
 use std::time::Duration;
@@ -8,6 +11,7 @@ const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
 ///
 /// This client is used to fetch RFCs from the RFC Editor's website.
 /// It is responsible for fetching the RFC index and RFCs.
+#[derive(Default)]
 pub struct RfcClient
 {
     client: Client,
@@ -16,6 +20,15 @@ pub struct RfcClient
 impl RfcClient
 {
     /// Create a new RFC client.
+    ///
+    /// # Returns
+    ///
+    /// A new RFC client.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the HTTP client cannot be created.
+    #[must_use]
     pub fn new() -> Self
     {
         let client = Client::builder()
@@ -35,17 +48,21 @@ impl RfcClient
     /// # Returns
     ///
     /// The RFC content as a string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the RFC is not found or unavailable.
     pub async fn fetch_rfc(&self, rfc_number: u32) -> Result<String>
     {
         // RFC documents are available in TXT format
-        let url = format!("{}{}.txt", RFC_BASE_URL, rfc_number);
+        let url = format!("{RFC_BASE_URL}{rfc_number}.txt");
 
         let response = self
             .client
             .get(&url)
             .send() // Send the GET request to the url.
             .await
-            .context(format!("Failed to fetch RFC {}", rfc_number))?;
+            .context(format!("Failed to fetch RFC {rfc_number}"))?;
 
         if !response.status().is_success()
         {
@@ -56,10 +73,10 @@ impl RfcClient
             );
         }
 
-        response.text().await.context(format!(
-            "Failed to read text content for RFC {}",
-            rfc_number
-        ))
+        response
+            .text()
+            .await
+            .context(format!("Failed to read text content for RFC {rfc_number}",))
     }
 
     /// Fetch the RFC index.
@@ -67,6 +84,11 @@ impl RfcClient
     /// # Returns
     ///
     /// The RFC index as a string.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the RFC index is not available or if the request
+    /// fails.
     pub async fn fetch_rfc_index(&self) -> Result<String>
     {
         // RFC index is available at a different URL
