@@ -188,8 +188,22 @@ impl RfcCache
 
             if path.is_file()
             {
-                fs::remove_file(&path).context(format!("Failed to remove cache file: {}", path.display()))?;
+                fs::remove_file(&path)
+                    .context(format!("Failed to remove cache file: {}", path.display()))?;
             }
+        }
+
+        // Remove the directory if it is empty.
+        let is_empty = self
+            .cache_dir
+            .read_dir()
+            .context("Failed to check if cache directory is empty")?
+            .next()
+            .is_none();
+
+        if is_empty
+        {
+            fs::remove_dir(&self.cache_dir).context("Failed to remove empty cache directory")?;
         }
 
         Ok(())
