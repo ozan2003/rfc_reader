@@ -52,7 +52,7 @@ impl RfcClient
     /// # Errors
     ///
     /// Returns an error if the RFC is not found or unavailable.
-    pub async fn fetch_rfc(&self, rfc_number: u32) -> Result<String>
+    pub async fn fetch_rfc(&self, rfc_number: u16) -> Result<String>
     {
         // RFC documents are available in TXT format
         let rfc_url = format!("{RFC_BASE_URL}{rfc_number}.txt");

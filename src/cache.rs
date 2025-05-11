@@ -55,7 +55,7 @@ impl RfcCache
     /// Some(String) containing the RFC content if it exists in the cache,
     /// or None if the RFC is not cached or cannot be read.
     #[must_use]
-    pub fn get_cached_rfc(&self, rfc_number: u32) -> Option<String>
+    pub fn get_cached_rfc(&self, rfc_number: u16) -> Option<String>
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
@@ -81,7 +81,7 @@ impl RfcCache
     /// # Errors
     ///
     /// Returns an error if the cache file cannot be created or written to.
-    pub fn cache_rfc(&self, rfc_number: u32, content: &str) -> Result<()>
+    pub fn cache_rfc(&self, rfc_number: u16, content: &str) -> Result<()>
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
@@ -150,7 +150,7 @@ impl RfcCache
     /// # Returns
     ///
     /// The path where the RFC should be cached
-    fn format_cache_path(&self, rfc_number: u32) -> PathBuf
+    fn format_cache_path(&self, rfc_number: u16) -> PathBuf
     {
         self.cache_dir
             .join(format!("rfc{rfc_number}.txt"))

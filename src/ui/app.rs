@@ -36,7 +36,7 @@ pub struct App
     /// Content of the currently loaded RFC
     pub rfc_content: String,
     /// Number of the currently loaded RFC
-    pub rfc_number: u32,
+    pub rfc_number: u16,
     /// Current scroll position in the document
     pub scroll: usize,
     /// Current application mode
@@ -68,7 +68,7 @@ impl App
     ///
     /// A new `App` instance initialized for the specified RFC
     #[must_use]
-    pub fn new(rfc_number: u32, content: String) -> Self
+    pub fn new(rfc_number: u16, content: String) -> Self
     {
         let toc_panel = TocPanel::new(&content);
 

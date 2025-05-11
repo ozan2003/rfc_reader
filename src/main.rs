@@ -69,7 +69,7 @@ async fn main() -> Result<()>
     // Get RFC if specified
     let rfc_number = matches
         .get_one::<String>("rfc")
-        .and_then(|s| s.parse::<u32>().ok());
+        .and_then(|s| s.parse::<u16>().ok());
 
     // Placeholder for getting RFC content
     let (rfc_number, rfc_content) = if let Some(number) = rfc_number
