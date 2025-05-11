@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.98"
 clap = "4.5.37"
+cli-log = "2.1.0"
 crossterm = "0.29.0"
 directories = "6.0.0"
 ratatui = "0.29.0"

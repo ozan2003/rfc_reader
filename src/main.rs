@@ -9,14 +9,13 @@ use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use std::{io, time::Duration};
+use cli_log::*;
 
 #[tokio::main]
 async fn main() -> Result<()>
 {
     // Parse command line arguments
     let matches = Command::new("rfc_reader")
-        //.version(env!("CARGO_PKG_VERSION"))
-        //.author("RFC Reader Team")
         .about("A terminal-based RFC reader")
         .arg(
             Arg::new("rfc")
@@ -47,7 +46,7 @@ async fn main() -> Result<()>
     {
         // Clear all cached RFCs
         cache.clear()?;
-        println!("Cache cleared successfully");
+        info!("Cache cleared successfully");
         return Ok(());
     }
 
@@ -71,7 +70,7 @@ async fn main() -> Result<()>
         // Get the RFC content - first check cache, then fetch from network if needed
         let content = if let Some(cached_content) = cache.get_cached_rfc(number)
         {
-            println!("Using cached version of RFC {number}");
+            info!("Using cached version of RFC {number}");
             cached_content
         }
         else
@@ -79,13 +78,13 @@ async fn main() -> Result<()>
             let offline_mode = matches.get_flag("offline");
             if offline_mode
             {
-                println!("Cannot load RFC {number} - not in cache and offline mode is enabled");
+                error!("Cannot load RFC {number} - not in cache and offline mode is enabled");
                 return Err(anyhow::anyhow!(
                     "Cannot load RFC {number} - not in cache and offline mode is enabled"
                 ));
             }
             // Fetch RFC from network since it's not in cache
-            println!("Fetching RFC {number} from network...");
+            info!("Fetching RFC {number} from network...");
 
             match client.fetch_rfc(number).await
             {
@@ -94,13 +93,13 @@ async fn main() -> Result<()>
                     // Cache the fetched content for future use.
                     if let Err(e) = cache.cache_rfc(number, &content)
                     {
-                        println!("Warning: Failed to cache RFC {number}: {e}");
+                        error!("Failed to cache RFC {number}: {e}");
                     }
                     content
                 }
                 Err(e) =>
                 {
-                    println!("Error fetching RFC {number}: {e}");
+                    error!("Error fetching RFC {number}: {e}");
                     return Err(anyhow::anyhow!("Failed to fetch RFC {number}. Error: {e}"));
                 }
             }
@@ -109,7 +108,7 @@ async fn main() -> Result<()>
     }
     else
     {
-        eprintln!("No RFC number provided");
+        error!("No RFC number provided");
         return Err(anyhow::anyhow!("No RFC number provided"));
     };
 
@@ -129,7 +128,7 @@ async fn main() -> Result<()>
     // Return any error from the app
     if let Err(err) = res
     {
-        eprintln!("Error: {err}");
+        error!("Error: {err}");
     }
 
     Ok(())
