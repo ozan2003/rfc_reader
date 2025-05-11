@@ -8,7 +8,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::Style,
     text::{Line, Text},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
 
 use super::toc_panel::TocPanel;
@@ -164,6 +164,9 @@ impl App
         // Create a centered rectangle.
         let area = centered_rect(60, 60, frame.area());
 
+        // Clear the area first to make it fully opaque
+        frame.render_widget(Clear, area);
+
         // Vim-like controls
         let text = Text::from(vec![
             Line::from("RFC Reader Help:"),
@@ -182,7 +185,8 @@ impl App
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Help"),
+                    .title("Help")
+                    .style(Style::default()),
             )
             .style(Style::default())
             .wrap(Wrap { trim: true });
@@ -206,13 +210,17 @@ impl App
             3,
         );
 
+        // Clear the area first to make it fully opaque
+        frame.render_widget(Clear, area);
+
         let text = Text::from(format!("/{}", self.search_text));
 
         let search_box = Paragraph::new(text)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Search"),
+                    .title("Search")
+                    .style(Style::default()),
             )
             .style(Style::default());
 
