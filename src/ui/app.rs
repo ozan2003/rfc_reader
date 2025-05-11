@@ -16,7 +16,7 @@ use super::toc_panel::TocPanel;
 /// Application mode that determines the current UI state.
 ///
 /// Controls what is displayed and how user input is interpreted.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AppMode
 {
     /// Normal reading mode - default state
