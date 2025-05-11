@@ -21,4 +21,4 @@ mod ui;
 
 pub use cache::RfcCache;
 pub use client::RfcClient;
-pub use ui::{App, Event, EventHandler};
+pub use ui::{App, Event, EventHandler, AppMode};

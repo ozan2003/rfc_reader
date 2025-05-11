@@ -6,5 +6,5 @@ mod app;
 mod event;
 mod toc_panel;
 
-pub use app::App;
+pub use app::{App, AppMode};
 pub use event::{Event, EventHandler};
