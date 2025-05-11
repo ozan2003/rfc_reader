@@ -73,10 +73,16 @@ impl RfcClient
             );
         }
 
-        response
-            .text()
-            .await
-            .context(format!("Failed to read text content for RFC {rfc_number}",))
+        if let Ok(text) = response.text().await
+        {
+            // Strip the whitespace from the text.
+            let text = text.trim();
+            Ok(text.to_string())
+        }
+        else
+        {
+            anyhow::bail!("Failed to read text content for RFC {rfc_number}");
+        }
     }
 
     /// Fetch the RFC index.
