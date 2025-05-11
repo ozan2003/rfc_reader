@@ -79,7 +79,8 @@ impl TocPanel
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Table of Contents"),
+                    .title("Table of Contents")
+                    .title_alignment(Alignment::Center),
             )
             .highlight_style(
                 Style::default()

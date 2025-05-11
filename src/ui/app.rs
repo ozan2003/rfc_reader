@@ -5,7 +5,7 @@
 //! scrolling, searching, and navigation.
 use ratatui::{
     Frame,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::Style,
     text::{Line, Text},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
@@ -136,7 +136,8 @@ impl App
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(title),
+                    .title(title)
+                    .title_alignment(Alignment::Center),
             )
             .wrap(Wrap { trim: true })
             .scroll((self.scroll.try_into().unwrap(), 0));
