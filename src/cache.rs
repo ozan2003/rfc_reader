@@ -34,7 +34,7 @@ impl RfcCache
     /// Returns an error if the cache directory cannot be determined or created.
     pub fn new() -> Result<Self>
     {
-        let project_dirs = ProjectDirs::from("", "ozan", "rfc_reader")
+        let project_dirs = ProjectDirs::from("", "", "rfc_reader")
             .context("Failed to determine project directories")?;
 
         let cache_dir = project_dirs.cache_dir().to_path_buf();
