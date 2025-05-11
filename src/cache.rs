@@ -208,4 +208,15 @@ impl RfcCache
 
         Ok(())
     }
+
+    /// Get the cache directory.
+    ///
+    /// # Returns
+    ///
+    /// The cache directory.
+    #[must_use]
+    pub fn cache_dir(&self) -> &PathBuf
+    {
+        &self.cache_dir
+    }
 }

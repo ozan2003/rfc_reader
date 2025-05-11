@@ -1,5 +1,7 @@
 use anyhow::Result;
 use clap::{Arg, ArgAction, Command};
+#[allow(clippy::wildcard_imports)]
+use cli_log::*;
 use crossterm::ExecutableCommand;
 use crossterm::event::KeyCode;
 use crossterm::terminal::{
@@ -9,14 +11,22 @@ use ratatui::Terminal;
 use ratatui::backend::CrosstermBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use std::{io, time::Duration};
-use cli_log::*;
 
 #[tokio::main]
 async fn main() -> Result<()>
 {
+    // Initialize cache
+    let cache = RfcCache::new()?;
+
     // Parse command line arguments
     let matches = Command::new("rfc_reader")
         .about("A terminal-based RFC reader")
+        // Inform about the cache directory
+        .after_help(format!(
+            "This program caches RFCs to improve performance.\nThe cache is stored in the \
+             following directory: {}",
+            cache.cache_dir().display()
+        ))
         .arg(
             Arg::new("rfc")
                 .help("RFC number to open")
@@ -37,9 +47,6 @@ async fn main() -> Result<()>
                 .action(ArgAction::SetTrue),
         )
         .get_matches();
-
-    // Initialize cache
-    let cache = RfcCache::new()?;
 
     // Clear cache if requested
     if matches.get_flag("clear-cache")
