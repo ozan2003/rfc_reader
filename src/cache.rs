@@ -165,4 +165,33 @@ impl RfcCache
     {
         self.cache_dir.join("rfc-index.txt")
     }
+
+    /// Clears all cached RFCs and the index.
+    ///
+    /// # Returns
+    ///
+    /// A Result indicating success or an error if clearing the cache failed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if removing files from the cache directory fails.
+    pub fn clear(&self) -> Result<()>
+    {
+        // Read the directory entries
+        let entries = fs::read_dir(&self.cache_dir).context("Failed to read cache directory")?;
+
+        // Remove each file in the cache directory
+        for entry in entries
+        {
+            let entry = entry.context("Failed to read cache directory entry")?;
+            let path = entry.path();
+
+            if path.is_file()
+            {
+                fs::remove_file(&path).context(format!("Failed to remove cache file: {path:?}"))?;
+            }
+        }
+
+        Ok(())
+    }
 }
