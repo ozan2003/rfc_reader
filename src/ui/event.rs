@@ -32,10 +32,12 @@ pub enum Event
 pub struct EventHandler
 {
     /// Sender side of the event channel, kept for ownership
+    #[allow(dead_code)]
     sender: mpsc::Sender<Event>,
     /// Receiver side of the event channel to get events from the handler thread
     receiver: mpsc::Receiver<Event>,
     /// Thread handle for the event polling thread
+    #[allow(dead_code)]
     handler: thread::JoinHandle<()>,
 }
 
