@@ -97,6 +97,9 @@ impl App
     /// Panics if the frame is not the correct size.
     pub fn render(&self, frame: &mut Frame)
     {
+        // Clear the entire frame on each render to prevent artifacts
+        frame.render_widget(Clear, frame.area());
+        
         // Normal mode layout
         let size = frame.area();
 
@@ -126,8 +129,7 @@ impl App
         // Render the main content area
         let content_area = if self.show_toc { chunks[1] } else { chunks[0] };
 
-        let text = Text::from(self.rfc_content.clone());
-
+        let text = Text::raw(&self.rfc_content);
         let title = format!("RFC {} - Press ? for help", self.rfc_number);
 
         let paragraph = Paragraph::new(text)
@@ -136,9 +138,11 @@ impl App
                     .borders(Borders::ALL)
                     .title(title),
             )
-            .wrap(Wrap { trim: false })
+            .wrap(Wrap { trim: true })
             .scroll((self.scroll.try_into().unwrap(), 0));
 
+        // Clear again before rendering content to ensure clean slate
+        frame.render_widget(Clear, content_area);
         frame.render_widget(paragraph, content_area);
 
         // Render help if in help mode
@@ -244,7 +248,6 @@ impl App
     /// * `amount` - Number of lines to scroll down
     pub fn scroll_down(&mut self, amount: usize)
     {
-        // The max scroll position will be handled by ratatui
         self.scroll = self.scroll.saturating_add(amount);
     }
 
