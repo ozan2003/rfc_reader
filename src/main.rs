@@ -69,43 +69,39 @@ async fn main() -> Result<()>
     let (rfc_number, rfc_content) = if let Some(number) = rfc_number
     {
         // Get the RFC content - first check cache, then fetch from network if needed
-        let content = match cache.get_cached_rfc(number)
+        let content = if let Some(cached_content) = cache.get_cached_rfc(number)
         {
-            Some(cached_content) =>
+            println!("Using cached version of RFC {number}");
+            cached_content
+        }
+        else
+        {
+            let offline_mode = matches.get_flag("offline");
+            if offline_mode
             {
-                println!("Using cached version of RFC {number}");
-                cached_content
+                println!("Cannot load RFC {number} - not in cache and offline mode is enabled");
+                return Err(anyhow::anyhow!(
+                    "Cannot load RFC {number} - not in cache and offline mode is enabled"
+                ));
             }
-            None =>
-            {
-                let offline_mode = matches.get_flag("offline");
-                if offline_mode
-                {
-                    println!("Cannot load RFC {number} - not in cache and offline mode is enabled");
-                    String::from("Offline mode - RFC {number} not available in cache")
-                }
-                else
-                {
-                    // Fetch RFC from network since it's not in cache
-                    println!("Fetching RFC {number} from network...");
+            // Fetch RFC from network since it's not in cache
+            println!("Fetching RFC {number} from network...");
 
-                    match client.fetch_rfc(number).await
+            match client.fetch_rfc(number).await
+            {
+                Ok(content) =>
+                {
+                    // Cache the fetched content for future use.
+                    if let Err(e) = cache.cache_rfc(number, &content)
                     {
-                        Ok(content) =>
-                        {
-                            // Cache the fetched content for future use.
-                            if let Err(e) = cache.cache_rfc(number, &content)
-                            {
-                                println!("Warning: Failed to cache RFC {number}: {e}");
-                            }
-                            content
-                        }
-                        Err(e) =>
-                        {
-                            println!("Error fetching RFC {number}: {e}");
-                            format!("Failed to fetch RFC {number}. Error: {e}")
-                        }
+                        println!("Warning: Failed to cache RFC {number}: {e}");
                     }
+                    content
+                }
+                Err(e) =>
+                {
+                    println!("Error fetching RFC {number}: {e}");
+                    return Err(anyhow::anyhow!("Failed to fetch RFC {number}. Error: {e}"));
                 }
             }
         };
@@ -160,15 +156,11 @@ fn run_app<T: ratatui::backend::Backend>(
                 }
 
                 // Help toggle with '?'
-                (AppMode::Normal, KeyCode::Char('?'))  | (AppMode::Help, KeyCode::Char('?')) | (AppMode::Help, KeyCode::Esc) =>
+                (AppMode::Normal | AppMode::Help, KeyCode::Char('?')) |
+                (AppMode::Help, KeyCode::Esc) =>
                 {
                     app.toggle_help();
                 }
-                /*(AppMode::Help, KeyCode::Char('?')) | (AppMode::Help, KeyCode::Esc) =>
-                {
-                    app.toggle_help();
-                }*/
-
                 // Table of contents toggle with 't'
                 (AppMode::Normal, KeyCode::Char('t')) =>
                 {
@@ -176,19 +168,19 @@ fn run_app<T: ratatui::backend::Backend>(
                 }
 
                 // Navigation in normal mode
-                (AppMode::Normal, KeyCode::Char('j')) | (AppMode::Normal, KeyCode::Down) =>
+                (AppMode::Normal, KeyCode::Char('j') | KeyCode::Down) =>
                 {
                     app.scroll_down(1);
                 }
-                (AppMode::Normal, KeyCode::Char('k')) | (AppMode::Normal, KeyCode::Up) =>
+                (AppMode::Normal, KeyCode::Char('k') | KeyCode::Up) =>
                 {
                     app.scroll_up(1);
                 }
-                (AppMode::Normal, KeyCode::Char('f')) | (AppMode::Normal, KeyCode::PageDown) =>
+                (AppMode::Normal, KeyCode::Char('f') | KeyCode::PageDown) =>
                 {
                     app.scroll_down(10);
                 }
-                (AppMode::Normal, KeyCode::Char('b')) | (AppMode::Normal, KeyCode::PageUp) =>
+                (AppMode::Normal, KeyCode::Char('b') | KeyCode::PageUp) =>
                 {
                     app.scroll_up(10);
                 }
@@ -211,9 +203,9 @@ fn run_app<T: ratatui::backend::Backend>(
                 {
                     app.remove_search_char();
                 }
-                (AppMode::Search, KeyCode::Char(c)) =>
+                (AppMode::Search, KeyCode::Char(ch)) =>
                 {
-                    app.add_search_char(c);
+                    app.add_search_char(ch);
                 }
 
                 // Search result navigation
