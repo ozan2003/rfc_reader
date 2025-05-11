@@ -5,6 +5,7 @@
 //! Provides navigation capabilities and tracks the currently selected entry.
 use ratatui::{
     Frame,
+    layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     text::Line,
     widgets::{Block, Borders, List, ListItem, ListState},
@@ -67,12 +68,12 @@ impl TocPanel
     ///
     /// * `frame` - The frame to render to
     /// * `area` - The area within the frame to render the panel
-    pub fn render(&self, frame: &mut Frame, area: ratatui::layout::Rect)
+    pub fn render(&mut self, frame: &mut Frame, area: Rect)
     {
         let items: Vec<ListItem> = self
             .entries
             .iter()
-            .map(|entry| ListItem::new(Line::from(entry.title.clone())))
+            .map(|entry| ListItem::new(Line::raw(&entry.title)))
             .collect();
 
         let list = List::new(items)
@@ -89,7 +90,7 @@ impl TocPanel
             )
             .highlight_symbol("> ");
 
-        frame.render_stateful_widget(list, area, &mut self.state.clone());
+        frame.render_stateful_widget(list, area, &mut self.state);
     }
 
     /// Moves the selection to the next entry, wrapping to the beginning if at

@@ -95,7 +95,7 @@ impl App
     /// # Panics
     ///
     /// Panics if the frame is not the correct size.
-    pub fn render(&self, frame: &mut Frame)
+    pub fn render(&mut self, frame: &mut Frame)
     {
         // Clear the entire frame on each render to prevent artifacts
         frame.render_widget(Clear, frame.area());
