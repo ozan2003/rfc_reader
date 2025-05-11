@@ -184,6 +184,15 @@ fn run_app<T: ratatui::backend::Backend>(
                     app.scroll_up(10);
                 }
 
+                (AppMode::Normal, KeyCode::Char('g')) =>
+                {
+                    app.scroll_up(app.rfc_content.len());
+                }
+                (AppMode::Normal, KeyCode::Char('G')) =>
+                {
+                    app.scroll_down(app.rfc_content.len());
+                }
+
                 // Search handling
                 (AppMode::Normal, KeyCode::Char('/')) =>
                 {
