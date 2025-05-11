@@ -188,7 +188,7 @@ impl RfcCache
 
             if path.is_file()
             {
-                fs::remove_file(&path).context(format!("Failed to remove cache file: {path:?}"))?;
+                fs::remove_file(&path).context(format!("Failed to remove cache file: {}", path.display()))?;
             }
         }
 
