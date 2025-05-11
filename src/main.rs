@@ -195,11 +195,11 @@ fn run_app<T: RatatuiBackend>(
                 }
                 (AppMode::Normal, KeyCode::Char('f') | KeyCode::PageDown) =>
                 {
-                    app.scroll_down(10);
+                    app.scroll_down(terminal.size()?.height.into());
                 }
                 (AppMode::Normal, KeyCode::Char('b') | KeyCode::PageUp) =>
                 {
-                    app.scroll_up(10);
+                    app.scroll_up(terminal.size()?.height.into());
                 }
 
                 (AppMode::Normal, KeyCode::Char('g')) =>
