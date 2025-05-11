@@ -7,8 +7,8 @@ use crossterm::event::KeyCode;
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
+use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
 use ratatui::Terminal;
-use ratatui::backend::CrosstermBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use std::{io, time::Duration};
 
@@ -141,7 +141,18 @@ async fn main() -> Result<()>
     Ok(())
 }
 
-fn run_app<T: ratatui::backend::Backend>(
+/// Run the main loop
+///
+/// # Arguments
+///
+/// * `terminal` - The terminal to draw to
+/// * `app` - The app to run
+/// * `event_handler` - The event handler to handle events
+///
+/// # Errors
+///
+/// Returns an error if the terminal fails to draw to the screen.
+fn run_app<T: RatatuiBackend>(
     terminal: &mut Terminal<T>,
     mut app: App,
     event_handler: &EventHandler,
