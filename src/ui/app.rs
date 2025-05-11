@@ -99,7 +99,7 @@ impl App
     {
         // Clear the entire frame on each render to prevent artifacts
         frame.render_widget(Clear, frame.area());
-        
+
         // Normal mode layout
         let size = frame.area();
 
