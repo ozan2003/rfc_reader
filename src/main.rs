@@ -7,13 +7,13 @@ use crossterm::event::KeyCode;
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
-use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
 use ratatui::Terminal;
+use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use std::{io, time::Duration};
 
-#[tokio::main]
-async fn main() -> Result<()>
+// TODO: Add panic hook to restore terminal on panic.
+fn main() -> Result<()>
 {
     // Initialize cache
     let cache = RfcCache::new()?;
@@ -93,7 +93,7 @@ async fn main() -> Result<()>
             // Fetch RFC from network since it's not in cache
             info!("Fetching RFC {number} from network...");
 
-            match client.fetch_rfc(number).await
+            match client.fetch_rfc(number)
             {
                 Ok(content) =>
                 {

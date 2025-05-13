@@ -2,8 +2,9 @@
 //!
 //! Handles network requests for the RFC reader application.
 use anyhow::{Context, Result};
-use reqwest::Client;
+use std::io::Read;
 use std::time::Duration;
+use ureq::Agent;
 
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
 
@@ -11,10 +12,9 @@ const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
 ///
 /// This client is used to fetch RFCs from the RFC Editor's website.
 /// It is responsible for fetching the RFC index and RFCs.
-#[derive(Default)]
 pub struct RfcClient
 {
-    client: Client,
+    client: Agent,
 }
 
 impl RfcClient
@@ -31,12 +31,13 @@ impl RfcClient
     #[must_use]
     pub fn new() -> Self
     {
-        let client = Client::builder()
-            .timeout(Duration::from_secs(30)) // Default timeout is 30 secs
-            .build()
-            .expect("Failed to create HTTP client");
+        let client = Agent::config_builder()
+            .timeout_global(Some(Duration::from_secs(30)))
+            .build();
 
-        Self { client }
+        Self {
+            client: client.into(),
+        }
     }
 
     /// Fetch a specific RFC.
@@ -52,37 +53,25 @@ impl RfcClient
     /// # Errors
     ///
     /// Returns an error if the RFC is not found or unavailable.
-    pub async fn fetch_rfc(&self, rfc_number: u16) -> Result<String>
+    pub fn fetch_rfc(&self, rfc_number: u16) -> Result<String>
     {
         // RFC documents are available in TXT format
         let rfc_url = format!("{RFC_BASE_URL}{rfc_number}.txt");
 
         let response = self
             .client
-            .get(&rfc_url)
-            .send() // Send the GET request to the url.
-            .await
-            .context(format!("Failed to fetch RFC {rfc_number}"))?;
+            .get(rfc_url)
+            .call()
+            .context("Failed to fetch RFC {rfc_number}")?;
 
-        if !response.status().is_success()
-        {
-            anyhow::bail!(
-                "RFC {} not found or unavailable (status: {})",
-                rfc_number,
-                response.status()
-            );
-        }
+        let mut response_body = String::new();
+        response
+            .into_body()
+            .into_reader()
+            .read_to_string(&mut response_body)
+            .context("Failed to read RFC {rfc_number} content")?;
 
-        if let Ok(text) = response.text().await
-        {
-            // Strip the whitespace from the text.
-            let text = text.trim();
-            Ok(text.to_string())
-        }
-        else
-        {
-            anyhow::bail!("Failed to read text content for RFC {rfc_number}");
-        }
+        Ok(response_body.trim().to_string())
     }
 
     /// Fetch the RFC index.
@@ -95,7 +84,7 @@ impl RfcClient
     ///
     /// Returns an error if the RFC index is not available or if the request
     /// fails.
-    pub async fn fetch_rfc_index(&self) -> Result<String>
+    pub fn fetch_rfc_index(&self) -> Result<String>
     {
         // RFC index is available at a different URL
         let rfc_url: &'static str = "https://www.rfc-editor.org/rfc-index.txt";
@@ -103,18 +92,24 @@ impl RfcClient
         let response = self
             .client
             .get(rfc_url)
-            .send()
-            .await
+            .call()
             .context("Failed to fetch RFC index")?;
 
-        if !response.status().is_success()
-        {
-            anyhow::bail!("RFC index not available (status: {})", response.status());
-        }
-
+        let mut response_body = String::new();
         response
-            .text()
-            .await
-            .context("Failed to read RFC index content")
+            .into_body()
+            .into_reader()
+            .read_to_string(&mut response_body)
+            .context("Failed to read RFC index content")?;
+
+        Ok(response_body)
+    }
+}
+
+impl Default for RfcClient
+{
+    fn default() -> Self
+    {
+        Self::new()
     }
 }
