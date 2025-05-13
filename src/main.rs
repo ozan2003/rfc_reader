@@ -10,7 +10,8 @@ use crossterm::terminal::{
 use ratatui::Terminal;
 use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
-use std::{io, time::Duration};
+use std::io::stdout;
+use std::time::Duration;
 
 // TODO: Add panic hook to restore terminal on panic.
 fn main() -> Result<()>
@@ -62,8 +63,8 @@ fn main() -> Result<()>
 
     // Setup terminal
     enable_raw_mode()?;
-    io::stdout().execute(EnterAlternateScreen)?;
-    let backend = CrosstermBackend::new(io::stdout());
+    stdout().execute(EnterAlternateScreen)?;
+    let backend = CrosstermBackend::new(stdout());
     let mut terminal = Terminal::new(backend)?;
 
     // Get RFC if specified
@@ -130,7 +131,7 @@ fn main() -> Result<()>
 
     // Cleanup terminal
     disable_raw_mode()?;
-    io::stdout().execute(LeaveAlternateScreen)?;
+    stdout().execute(LeaveAlternateScreen)?;
 
     // Return any error from the app
     if let Err(err) = res
