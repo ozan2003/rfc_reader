@@ -1,4 +1,6 @@
-//! Implementation of guard for the terminal, to ensure that the terminal is
+//! Terminal state management.
+//!
+//! Ensures the terminal is properly initialized for the application and
 //! restored to its original state when the program exits.
 #[allow(clippy::wildcard_imports)]
 use cli_log::*;
@@ -88,12 +90,6 @@ pub fn init_tui() -> IoResult<Terminal<impl RatatuiBackend>>
 }
 
 /// Initialize the panic hook to handle panics
-///
-/// This restores the terminal to a normal state without panicking.
-///
-/// # Returns
-///
-/// Returns the original panic hook.
 pub fn init_panic_hook()
 {
     let original_hook = take_hook();
