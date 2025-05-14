@@ -5,6 +5,8 @@
 mod app;
 mod event;
 mod toc_panel;
+mod guard;
 
 pub use app::{App, AppMode};
 pub use event::{Event, EventHandler};
+pub use guard::{TerminalGuard, init_panic_hook, init_tui};

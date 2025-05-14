@@ -2,16 +2,11 @@ use anyhow::Result;
 use clap::{Arg, ArgAction, Command};
 #[allow(clippy::wildcard_imports)]
 use cli_log::*;
-use crossterm::ExecutableCommand;
 use crossterm::event::KeyCode;
-use crossterm::terminal::{
-    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
-};
 use ratatui::Terminal;
-use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
+use ratatui::backend::{Backend as RatatuiBackend};
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
-use std::io::{Result as IoResult, stdout};
-use std::panic::{set_hook, take_hook};
+use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
 use std::time::Duration;
 
 fn main() -> Result<()>
@@ -131,102 +126,6 @@ fn main() -> Result<()>
     // Terminal will be cleaned up automatically when _terminal_guard is dropped
     // Just propagate any error from run_app
     run_app(&mut terminal, app, &event_handler)
-}
-
-/// Manage terminal state with RAII
-struct TerminalGuard;
-
-impl TerminalGuard
-{
-    /// Create a new `TerminalGuard`
-    ///
-    /// This does the standard terminal setup:
-    /// - Enters raw mode
-    /// - Enters alternate screen
-    ///
-    /// # Returns
-    ///
-    /// Returns an error if the terminal fails to enter raw mode or leave
-    /// alternate screen.
-    fn new() -> IoResult<Self>
-    {
-        // Setup terminal
-        enable_raw_mode()?;
-        stdout().execute(EnterAlternateScreen)?;
-        Ok(TerminalGuard)
-    }
-}
-
-impl Drop for TerminalGuard
-{
-    /// Drop the `TerminalGuard`
-    ///
-    /// This restores the terminal to a normal state by taking advantage of
-    /// RAII.
-    ///
-    /// This does the following:
-    /// - Exits raw mode
-    /// - Exits alternate screen
-    ///
-    /// This is performed even if the program panics or returns early
-    fn drop(&mut self)
-    {
-        if let Err(e) = disable_raw_mode()
-        {
-            eprintln!("Failed to disable raw mode: {e}");
-        }
-
-        if let Err(e) = stdout().execute(LeaveAlternateScreen)
-        {
-            eprintln!("Failed to leave alternate screen: {e}");
-        }
-    }
-}
-
-/// Initialize the terminal
-///
-/// This creates a new terminal and returns it.
-///
-/// # Returns
-///
-/// Returns the terminal.
-fn init_tui() -> IoResult<Terminal<impl RatatuiBackend>>
-{
-    // Terminal setup is now handled by TerminalGuard
-    // We just create and return the terminal
-    let backend = CrosstermBackend::new(stdout());
-    Terminal::new(backend)
-}
-
-/// Initialize the panic hook to handle panics
-///
-/// This restores the terminal to a normal state without panicking.
-///
-/// # Returns
-///
-/// Returns the original panic hook.
-fn init_panic_hook()
-{
-    let original_hook = take_hook();
-    set_hook(Box::new(move |panic_info| {
-        // Restore terminal to normal state without panicking
-        // We use separate try blocks to ensure both operations are attempted
-        if let Err(e) = disable_raw_mode()
-        {
-            eprintln!("Failed to disable raw mode during panic: {e}");
-        }
-
-        if let Err(e) = stdout().execute(LeaveAlternateScreen)
-        {
-            eprintln!("Failed to leave alternate screen during panic: {e}");
-        }
-
-        // Log the panic info
-        eprintln!("Application panicked: {panic_info}");
-
-        // Call the original panic hook
-        original_hook(panic_info);
-    }));
 }
 
 /// Run the main loop
