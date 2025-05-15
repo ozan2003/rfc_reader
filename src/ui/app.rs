@@ -40,14 +40,27 @@ pub enum AppMode
 /// scrolling, searching, and navigation.
 pub struct App
 {
+    // Core document
     /// Content of the currently loaded RFC
     pub rfc_content: String,
     /// Number of the currently loaded RFC
     pub rfc_number: u16,
+    /// Table of contents panel for the current document
+    pub toc_panel: TocPanel,
+
+    // Navigation
     /// Current scroll position in the document
     pub scroll: usize,
+
+    // UI state
     /// Current application mode
     pub mode: AppMode,
+    /// Flag indicating if the table of contents should be displayed
+    pub show_toc: bool,
+    /// Flag indicating if the application should exit
+    pub should_quit: bool,
+
+    // Search
     /// Current search query text
     pub search_text: String,
     /// Line numbers where search results were found
@@ -56,12 +69,6 @@ pub struct App
     pub current_search_index: usize,
     /// Map of line numbers to their matching spans.
     pub search_matches: HashMap<usize, Vec<(usize, usize)>>,
-    /// Flag indicating if the application should exit
-    pub should_quit: bool,
-    /// Flag indicating if the table of contents should be displayed
-    pub show_toc: bool,
-    /// Table of contents panel for the current document
-    pub toc_panel: TocPanel,
 }
 
 impl App
