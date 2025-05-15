@@ -162,7 +162,6 @@ impl App
             .scroll((self.scroll.try_into().unwrap(), 0));
 
         // Clear again before rendering content to ensure clean slate
-        frame.render_widget(Clear, content_area);
         frame.render_widget(paragraph, content_area);
 
         // Render help if in help mode
@@ -178,7 +177,7 @@ impl App
         }
     }
 
-    /// Builds the text, highlighted if searching.
+    /// Builds the RFC text, highlighted if searching.
     fn build_text(&self) -> Text<'_>
     {
         if self.mode == AppMode::Search || !self.search_text.is_empty()
