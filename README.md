@@ -43,6 +43,7 @@ rfc_reader --clear-cache
 - /: Search
 - n/N: Next/previous search result
 - q: Quit
+- Esc: Reset search highlights
 - ?: Toggle help
 
 ## Cache Location
