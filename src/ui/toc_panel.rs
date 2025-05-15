@@ -105,22 +105,6 @@ impl TocPanel
         {
             self.state.select(Some(0));
         }
-        /*let i = match self.state.selected()
-        {
-            Some(i) =>
-            {
-                if i >= self.entries.len() - 1
-                {
-                    0
-                }
-                else
-                {
-                    i + 1
-                }
-            }
-            None => 0,
-        };*/
-        //self.state.select(Some(i));
     }
 
     /// Moves the selection to the previous entry, wrapping to the end if at the
