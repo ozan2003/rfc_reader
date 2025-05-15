@@ -4,7 +4,7 @@ use clap::{Arg, ArgAction, Command};
 use cli_log::*;
 use crossterm::event::KeyCode;
 use ratatui::Terminal;
-use ratatui::backend::{Backend as RatatuiBackend};
+use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
 use std::time::Duration;
