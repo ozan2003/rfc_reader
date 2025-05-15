@@ -6,12 +6,19 @@
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::Style,
-    text::{Line, Text},
+    style::{Color, Modifier, Style},
+    text::{Line, Span, Text},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
+use regex::Regex;
 
 use super::toc_panel::TocPanel;
+
+use std::collections::HashMap;
+
+const HIGHLIGHT_STYLE: Style = Style::new()
+    .fg(Color::Yellow)
+    .add_modifier(Modifier::BOLD);
 
 /// Application mode that determines the current UI state.
 ///
@@ -47,6 +54,8 @@ pub struct App
     pub search_results: Vec<usize>,
     /// Index of the currently selected search result
     pub current_search_index: usize,
+    /// Map of line numbers to their matching spans.
+    pub search_matches: HashMap<usize, Vec<(usize, usize)>>,
     /// Flag indicating if the application should exit
     pub should_quit: bool,
     /// Flag indicating if the table of contents should be displayed
@@ -80,6 +89,7 @@ impl App
             search_text: String::with_capacity(20),
             search_results: Vec::with_capacity(50),
             current_search_index: 0,
+            search_matches: HashMap::with_capacity(50),
             should_quit: false,
             show_toc: false,
             toc_panel,
@@ -129,7 +139,9 @@ impl App
         // Render the main content area
         let content_area = if self.show_toc { chunks[1] } else { chunks[0] };
 
-        let text = Text::raw(&self.rfc_content);
+        // Render the text with highlights if in search mode or if there is a search
+        // text
+        let text = self.build_text();
         let title = format!("RFC {} - Press ? for help", self.rfc_number);
 
         let paragraph = Paragraph::new(text)
@@ -159,6 +171,56 @@ impl App
         }
     }
 
+    /// Builds the text, highlighted if searching.
+    fn build_text(&self) -> Text<'_>
+    {
+        if self.mode == AppMode::Search || !self.search_text.is_empty()
+        {
+            let lines: Vec<Line> = self
+                .rfc_content
+                .lines()
+                .enumerate()
+                .map(|(line_num, line_str)| {
+                    // Highlight spans that match in the current line.
+                    if let Some(matches) = self.search_matches.get(&line_num)
+                    {
+                        let mut spans = Vec::new();
+                        let mut last_end = 0;
+                        let mut sorted_matches = matches.clone();
+                        sorted_matches.sort_by_key(|&(start, _)| start);
+
+                        for &(start, end) in &sorted_matches
+                        {
+                            if start > last_end
+                            {
+                                spans.push(Span::raw(&line_str[last_end..start]));
+                            }
+                            spans.push(Span::styled(&line_str[start..end], HIGHLIGHT_STYLE));
+                            last_end = end;
+                        }
+                        if last_end < line_str.len()
+                        {
+                            spans.push(Span::raw(&line_str[last_end..]));
+                        }
+                        Line::from(spans)
+                    }
+                    else
+                    {
+                        // No matches, leave the line as is.
+                        Line::from(line_str)
+                    }
+                })
+                .collect();
+
+            Text::from(lines)
+        }
+        else
+        {
+            // No highlights
+            Text::raw(&self.rfc_content)
+        }
+    }
+
     /// Renders the help overlay with keyboard shortcuts.
     ///
     /// # Arguments
@@ -182,6 +244,7 @@ impl App
             Line::from("t: Toggle table of contents"),
             Line::from("/: Search"),
             Line::from("n/N: Next/previous search result"),
+            Line::from("Esc: Reset search highlights"),
             Line::from("q: Quit"),
             Line::from("?: Toggle help"),
         ]);
@@ -307,32 +370,42 @@ impl App
     /// first result.
     pub fn perform_search(&mut self)
     {
+        self.search_results.clear();
+        self.search_matches.clear();
+
         if self.search_text.is_empty()
         {
-            self.search_results.clear();
             return;
         }
 
-        self.search_results = self
-            .rfc_content
-            .lines()
-            .enumerate()
-            .filter_map(|(index, line)| {
-                if line
-                    .to_lowercase()
-                    .contains(&self.search_text.to_lowercase())
-                {
-                    Some(index)
-                }
-                else
-                {
-                    None
-                }
-            })
-            .collect();
+        let pattern = regex::escape(&self.search_text);
+        let Ok(regex) = Regex::new(&format!("(?i){pattern}"))
+        else
+        {
+            return;
+        };
 
+        // Search line by line.
+        for (line_num, line) in self.rfc_content.lines().enumerate()
+        {
+            let mut matches_in_line = Vec::new();
+            for r#match in regex.find_iter(line)
+            {
+                // Add the range of the match.
+                matches_in_line.push((r#match.start(), r#match.end()));
+            }
+
+            if !matches_in_line.is_empty()
+            {
+                // Add the line number and matches to the search results.
+                self.search_results.push(line_num);
+                self.search_matches
+                    .insert(line_num, matches_in_line);
+            }
+        }
+
+        // Jump to the first result.
         self.current_search_index = 0;
-
         if !self.search_results.is_empty()
         {
             self.jump_to_search_result();
@@ -347,8 +420,11 @@ impl App
             return;
         }
 
-        self.current_search_index = (self.current_search_index + 1) % self.search_results.len();
-        self.jump_to_search_result();
+        if self.current_search_index != self.search_results.len() - 1
+        {
+            self.current_search_index += 1;
+            self.jump_to_search_result();
+        }
     }
 
     /// Moves to the previous search result.
@@ -359,16 +435,11 @@ impl App
             return;
         }
 
-        self.current_search_index = if self.current_search_index == 0
+        if self.current_search_index != 0
         {
-            self.search_results.len() - 1
+            self.current_search_index -= 1;
+            self.jump_to_search_result();
         }
-        else
-        {
-            self.current_search_index - 1
-        };
-
-        self.jump_to_search_result();
     }
 
     /// Jumps to the current search result by scrolling to its line.
@@ -380,6 +451,15 @@ impl App
         {
             self.scroll = *line;
         }
+    }
+
+    /// Resets the search highlights.
+    pub fn reset_search_highlights(&mut self)
+    {
+        self.search_text.clear();
+        self.search_results.clear();
+        self.search_matches.clear();
+        self.current_search_index = 0;
     }
 }
 

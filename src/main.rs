@@ -230,6 +230,10 @@ fn run_app<T: RatatuiBackend>(
                 {
                     app.prev_search_result();
                 }
+                (AppMode::Normal, KeyCode::Esc) =>
+                {
+                    app.reset_search_highlights();
+                }
 
                 _ =>
                 {} // Ignore other key combinations
