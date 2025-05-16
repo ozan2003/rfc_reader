@@ -180,7 +180,7 @@ impl RfcCache
         // Read the directory entries
         let entries = fs::read_dir(&self.cache_dir).context("Failed to read cache directory")?;
 
-        // Remove each file in the cache directory
+        // Remove each file or directory in the cache directory
         for entry in entries.filter_map(Result::ok)
         {
             let path = entry.path();
@@ -189,6 +189,13 @@ impl RfcCache
             {
                 fs::remove_file(&path)
                     .context(format!("Failed to remove cache file: {}", path.display()))?;
+            }
+            else if path.is_dir()
+            {
+                fs::remove_dir_all(&path).context(format!(
+                    "Failed to remove cache directory: {}",
+                    path.display()
+                ))?;
             }
         }
 
@@ -217,5 +224,114 @@ impl RfcCache
     pub fn cache_dir(&self) -> &PathBuf
     {
         &self.cache_dir
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_clear_with_files() -> Result<()>
+    {
+        // Create a temporary directory for testing
+        let temp_dir = TempDir::new()?;
+        let cache_dir = temp_dir.path().to_path_buf();
+
+        // Create an instance.
+        let cache = RfcCache {
+            cache_dir: cache_dir.clone(),
+        };
+
+        // Create test files in the temporary directory
+        let file_paths = vec!["file1.txt", "file2.txt", "file3.txt"];
+        for file_name in &file_paths
+        {
+            let file_path = cache_dir.join(file_name);
+            let mut file = File::create(&file_path)?;
+            writeln!(file, "test content")?;
+        }
+
+        // Verify files exist before clearing
+        for file_name in &file_paths
+        {
+            assert!(cache_dir.join(file_name).exists());
+        }
+
+        // Call the clear function
+        cache.clear()?;
+
+        // Verify all files have been deleted
+        for file_name in &file_paths
+        {
+            assert!(!cache_dir.join(file_name).exists());
+        }
+
+        // Verify the directory has been removed since it should be empty
+        assert!(!cache_dir.exists());
+
+        // The temp_dir will be automatically cleaned up when it goes out of scope
+        Ok(())
+    }
+
+    #[test]
+    fn test_clear_with_no_files() -> Result<()>
+    {
+        // Create a temporary directory for testing
+        let temp_dir = TempDir::new()?;
+        let cache_dir = temp_dir.path().to_path_buf();
+
+        // Create an instance of your struct with the temp directory
+        let cache = RfcCache {
+            cache_dir: cache_dir.clone(),
+        };
+
+        // Call the clear function on an empty directory
+        cache.clear()?;
+
+        // Verify the directory has been removed
+        assert!(!cache_dir.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_clear_with_mixed_content() -> Result<()>
+    {
+        // Create a temporary directory for testing
+        let temp_dir = TempDir::new()?;
+        let cache_dir = temp_dir.path().to_path_buf();
+
+        // Create an instance of your struct with the temp directory
+        let cache = RfcCache {
+            cache_dir: cache_dir.clone(),
+        };
+
+        // Create a file
+        let file_path = cache_dir.join("file.txt");
+        let mut file = File::create(&file_path)?;
+        writeln!(file, "test content")?;
+
+        // Create a subdirectory.
+        let subdir_path = cache_dir.join("subdir");
+        std::fs::create_dir(&subdir_path)?;
+
+        // Call the clear function
+        cache.clear()?;
+
+        // Verify the file is gone
+        assert!(!file_path.exists());
+
+        // Verify the cache directory is gone
+        assert!(!cache_dir.exists());
+
+        // The subdirectory should be removed
+        assert!(!subdir_path.exists());
+
+        Ok(())
     }
 }

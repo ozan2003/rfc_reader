@@ -946,6 +946,7 @@ dependencies = [
  "directories",
  "ratatui",
  "regex",
+ "tempfile",
  "ureq",
 ]
 
