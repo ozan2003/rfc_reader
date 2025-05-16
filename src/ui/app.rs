@@ -48,13 +48,13 @@ pub struct App
     /// Number of the currently loaded RFC
     pub rfc_number: u16,
     /// Table of contents panel for the current document
-    pub toc_panel: TocPanel,
+    pub rfc_toc_panel: TocPanel,
     /// Line number of the content
     pub rfc_line_number: usize,
 
     // Navigation
     /// Current scroll position in the document
-    pub scroll: usize,
+    pub current_scroll_pos: usize,
 
     // UI state
     /// Current application mode
@@ -96,9 +96,9 @@ impl App
         Self {
             rfc_content: content,
             rfc_number,
-            toc_panel,
+            rfc_toc_panel: toc_panel,
             rfc_line_number,
-            scroll: 0,
+            current_scroll_pos: 0,
             mode: AppMode::Normal,
             should_quit: false,
             show_toc: false,
@@ -146,7 +146,7 @@ impl App
         // If TOC is shown, render it
         if self.show_toc
         {
-            self.toc_panel.render(frame, chunks[0]);
+            self.rfc_toc_panel.render(frame, chunks[0]);
         }
 
         // Render the main content area
@@ -164,13 +164,14 @@ impl App
                     .title(title)
                     .title_alignment(Alignment::Center),
             )
-            .scroll((self.scroll.try_into().unwrap(), 0));
+            .scroll((self.current_scroll_pos.try_into().unwrap(), 0));
 
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
 
-        let mut scrollbar_state = ScrollbarState::new(self.rfc_line_number).position(self.scroll);
+        let mut scrollbar_state =
+            ScrollbarState::new(self.rfc_line_number).position(self.current_scroll_pos);
 
         // Rendering the paragraph and the scrollbar happens here.
         frame.render_widget(paragraph, content_area);
@@ -320,7 +321,9 @@ impl App
     /// * `amount` - Number of lines to scroll up
     pub fn scroll_up(&mut self, amount: usize)
     {
-        self.scroll = self.scroll.saturating_sub(amount);
+        self.current_scroll_pos = self
+            .current_scroll_pos
+            .saturating_sub(amount);
     }
 
     /// Scrolls the document down by the specified amount.
@@ -332,7 +335,7 @@ impl App
     {
         let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
         // Clamp the scroll position to the last line.
-        self.scroll = (self.scroll + amount).min(last_line_pos);
+        self.current_scroll_pos = (self.current_scroll_pos + amount).min(last_line_pos);
     }
 
     /// Toggles the help overlay.
@@ -469,7 +472,7 @@ impl App
             .search_results
             .get(self.current_search_index)
         {
-            self.scroll = *line;
+            self.current_scroll_pos = *line;
         }
     }
 
