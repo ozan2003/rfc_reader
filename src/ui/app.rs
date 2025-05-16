@@ -158,7 +158,6 @@ impl App
                     .title(title)
                     .title_alignment(Alignment::Center),
             )
-            .wrap(Wrap { trim: true })
             .scroll((self.scroll.try_into().unwrap(), 0));
 
         // Clear again before rendering content to ensure clean slate

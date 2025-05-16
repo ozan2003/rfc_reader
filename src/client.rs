@@ -71,7 +71,10 @@ impl RfcClient
             .read_to_string(&mut response_body)
             .context("Failed to read RFC {rfc_number} content")?;
 
-        Ok(response_body.trim().to_string())
+        Ok(response_body
+            .trim()
+            .replace('\x0c', "")
+            .to_string())
     }
 
     /// Fetch the RFC index.
