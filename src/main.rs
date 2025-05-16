@@ -44,6 +44,13 @@ fn main() -> Result<()>
                 .help("Run in offline mode (only load cached RFCs)")
                 .action(ArgAction::SetTrue),
         )
+        .arg(
+            Arg::new("list")
+                .long("list")
+                .short('l')
+                .help("List all cached RFCs")
+                .action(ArgAction::SetTrue),
+        )
         .get_matches();
 
     // Clear cache if requested
@@ -52,6 +59,11 @@ fn main() -> Result<()>
         // Clear all cached RFCs
         cache.clear()?;
         info!("Cache cleared successfully");
+        return Ok(());
+    }
+    else if matches.get_flag("list")
+    {
+        cache.print_list();
         return Ok(());
     }
 

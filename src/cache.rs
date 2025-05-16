@@ -225,6 +225,51 @@ impl RfcCache
     {
         &self.cache_dir
     }
+
+    /// List the cached RFCs.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the cache directory cannot be read.
+    pub fn print_list(&self)
+    {
+        // Read the directory entries.
+        let entries: Vec<_> = fs::read_dir(&self.cache_dir)
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect();
+
+        if entries.is_empty()
+        {
+            println!("No cached RFCs found.");
+            return;
+        }
+
+        println!("List of cached RFCs:");
+
+        for entry in entries
+        {
+            let path = entry.path();
+            if path.is_file()
+            {
+                let file_name = path
+                    .file_name()
+                    .expect("Failed to get file name")
+                    .to_string_lossy();
+
+                // Extract the RFC number from the file name.
+                let rfc_num = file_name
+                    .split("rfc")
+                    .nth(1)
+                    .unwrap()
+                    .split('.')
+                    .next()
+                    .unwrap();
+
+                println!("- RFC {rfc_num}");
+            }
+        }
+    }
 }
 
 #[cfg(test)]
