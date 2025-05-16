@@ -73,7 +73,7 @@ impl RfcClient
 
         Ok(response_body
             .trim()
-            .replace('\x0c', "")
+            .replace('\x0c', "") // Remove the unnecesary form feed.
             .to_string())
     }
 
