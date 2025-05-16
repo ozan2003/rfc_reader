@@ -62,14 +62,14 @@ impl RfcClient
             .client
             .get(rfc_url)
             .call()
-            .context("Failed to fetch RFC {rfc_number}")?;
+            .context(format!("Failed to fetch RFC {rfc_number}"))?;
 
         let mut response_body = String::new();
         response
             .into_body()
             .into_reader()
             .read_to_string(&mut response_body)
-            .context("Failed to read RFC {rfc_number} content")?;
+            .context(format!("Failed to read RFC {rfc_number} content"))?;
 
         Ok(response_body
             .trim()

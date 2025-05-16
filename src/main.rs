@@ -93,12 +93,12 @@ fn main() -> Result<()>
 
             let content = client
                 .fetch_rfc(number)
-                .context("Failed to fetch RFC {number}")?;
+                .context(format!("Failed to fetch RFC {number}"))?;
 
             // Cache the fetched content for future use.
             cache
                 .cache_rfc(number, &content)
-                .context("Could not cache RFC {number}")?;
+                .context(format!("Could not cache RFC {number}"))?;
             content
         };
         (number, content)
