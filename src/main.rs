@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Arg, ArgAction, Command};
 #[allow(clippy::wildcard_imports)]
 use cli_log::*;
@@ -80,8 +80,8 @@ fn main() -> Result<()>
         }
         else
         {
-            let offline_mode = matches.get_flag("offline");
-            if offline_mode
+            let is_offline = matches.get_flag("offline");
+            if is_offline
             {
                 error!("Cannot load RFC {number} - not in cache and offline mode is enabled");
                 return Err(anyhow::anyhow!(
@@ -91,23 +91,15 @@ fn main() -> Result<()>
             // Fetch RFC from network since it's not in cache
             info!("Fetching RFC {number} from network...");
 
-            match client.fetch_rfc(number)
-            {
-                Ok(content) =>
-                {
-                    // Cache the fetched content for future use.
-                    if let Err(e) = cache.cache_rfc(number, &content)
-                    {
-                        error!("Failed to cache RFC {number}: {e}");
-                    }
-                    content
-                }
-                Err(e) =>
-                {
-                    error!("Error fetching RFC {number}: {e}");
-                    return Err(anyhow::anyhow!("Failed to fetch RFC {number}. Error: {e}"));
-                }
-            }
+            let content = client
+                .fetch_rfc(number)
+                .context("Failed to fetch RFC {number}")?;
+
+            // Cache the fetched content for future use.
+            cache
+                .cache_rfc(number, &content)
+                .context("Could not cache RFC {number}")?;
+            content
         };
         (number, content)
     }

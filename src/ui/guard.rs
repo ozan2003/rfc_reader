@@ -58,15 +58,10 @@ impl Drop for TerminalGuard
     /// This is performed even if the program panics or returns early
     fn drop(&mut self)
     {
-        if let Err(e) = disable_raw_mode()
-        {
-            error!("Failed to disable raw mode: {e}");
-        }
-
-        if let Err(e) = stdout().execute(LeaveAlternateScreen)
-        {
-            error!("Failed to leave alternate screen: {e}");
-        }
+        disable_raw_mode().unwrap();
+        stdout()
+            .execute(LeaveAlternateScreen)
+            .unwrap();
     }
 }
 
@@ -90,21 +85,19 @@ pub fn init_tui() -> IoResult<Terminal<impl RatatuiBackend>>
 }
 
 /// Initialize the panic hook to handle panics
+/// 
+/// # Panics
+/// 
+/// This will panic if the terminal fails to enter raw mode or leave alternate screen.
 pub fn init_panic_hook()
 {
     let original_hook = take_hook();
     set_hook(Box::new(move |panic_info| {
         // Restore terminal to normal state without panicking
-        // We use separate try blocks to ensure both operations are attempted
-        if let Err(e) = disable_raw_mode()
-        {
-            error!("Failed to disable raw mode during panic: {e}");
-        }
-
-        if let Err(e) = stdout().execute(LeaveAlternateScreen)
-        {
-            error!("Failed to leave alternate screen during panic: {e}");
-        }
+        disable_raw_mode().unwrap();
+        stdout()
+            .execute(LeaveAlternateScreen)
+            .unwrap();
 
         // Log the panic info
         error!("Application panicked: {panic_info}");
