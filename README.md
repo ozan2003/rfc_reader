@@ -34,6 +34,8 @@ rfc_reader --clear-cache
 - `--offline`, `-o`: Run in offline mode (only load cached RFCs)
 - `--clear-cache`: Clear the RFC cache
 
+Refer to `rfc_reader --help` for more options.
+
 ## Controls
 
 - k/j or UpArrow/DownArrow: Scroll up/down
