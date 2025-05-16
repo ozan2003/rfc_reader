@@ -181,9 +181,8 @@ impl RfcCache
         let entries = fs::read_dir(&self.cache_dir).context("Failed to read cache directory")?;
 
         // Remove each file in the cache directory
-        for entry in entries
+        for entry in entries.filter_map(Result::ok)
         {
-            let entry = entry.context("Failed to read cache directory entry")?;
             let path = entry.path();
 
             if path.is_file()
