@@ -8,7 +8,9 @@ use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span, Text},
-    widgets::{Block, Borders, Clear, Paragraph, Wrap},
+    widgets::{
+        Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap,
+    },
 };
 use regex::Regex;
 
@@ -47,6 +49,8 @@ pub struct App
     pub rfc_number: u16,
     /// Table of contents panel for the current document
     pub toc_panel: TocPanel,
+    /// Line number of the content
+    pub rfc_line_number: usize,
 
     // Navigation
     /// Current scroll position in the document
@@ -87,19 +91,21 @@ impl App
     pub fn new(rfc_number: u16, content: String) -> Self
     {
         let toc_panel = TocPanel::new(&content);
+        let rfc_line_number = content.lines().count();
 
         Self {
             rfc_content: content,
             rfc_number,
+            toc_panel,
+            rfc_line_number,
             scroll: 0,
             mode: AppMode::Normal,
+            should_quit: false,
+            show_toc: false,
             search_text: String::with_capacity(20),
             search_results: Vec::with_capacity(50),
             current_search_index: 0,
             search_matches: HashMap::with_capacity(50),
-            should_quit: false,
-            show_toc: false,
-            toc_panel,
         }
     }
 
@@ -160,8 +166,15 @@ impl App
             )
             .scroll((self.scroll.try_into().unwrap(), 0));
 
-        // Clear again before rendering content to ensure clean slate
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+
+        let mut scrollbar_state = ScrollbarState::new(self.rfc_line_number).position(self.scroll);
+
+        // Rendering the paragraph and the scrollbar happens here.
         frame.render_widget(paragraph, content_area);
+        frame.render_stateful_widget(scrollbar, content_area, &mut scrollbar_state);
 
         // Render help if in help mode
         if self.mode == AppMode::Help
@@ -317,7 +330,9 @@ impl App
     /// * `amount` - Number of lines to scroll down
     pub fn scroll_down(&mut self, amount: usize)
     {
-        self.scroll = self.scroll.saturating_add(amount);
+        let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
+        // Clamp the scroll position to the last line.
+        self.scroll = (self.scroll + amount).min(last_line_pos);
     }
 
     /// Toggles the help overlay.
