@@ -11,6 +11,8 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, ListState},
 };
 
+use super::app::LineNumber;
+
 /// Represents an entry in the table of contents.
 ///
 /// Each entry contains a title and its corresponding line number
@@ -21,7 +23,7 @@ pub struct TocEntry
     /// The title text of the section
     pub title: String,
     /// The line number where this section appears in the document
-    pub line_number: usize,
+    pub line_number: LineNumber,
 }
 
 /// Panel that displays and manages a table of contents.
@@ -135,7 +137,7 @@ impl TocPanel
     ///
     /// The line number of the selected entry, or `None` if no entry is selected
     /// or the entries list is empty.
-    pub fn selected_line(&self) -> Option<usize>
+    pub fn selected_line(&self) -> Option<LineNumber>
     {
         if self.entries.is_empty()
         {

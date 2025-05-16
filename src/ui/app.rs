@@ -17,6 +17,7 @@ use regex::Regex;
 use super::toc_panel::TocPanel;
 
 use std::collections::HashMap;
+use std::ops::Range;
 
 const HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::Yellow)
@@ -36,6 +37,9 @@ pub enum AppMode
     Search,
 }
 
+/// Type alias for line numbers.
+pub(super) type LineNumber = usize;
+
 /// Main application state for the RFC reader.
 ///
 /// Handles the display and interaction with RFC documents including
@@ -50,11 +54,11 @@ pub struct App
     /// Table of contents panel for the current document
     pub rfc_toc_panel: TocPanel,
     /// Line number of the content
-    pub rfc_line_number: usize,
+    pub rfc_line_number: LineNumber,
 
     // Navigation
     /// Current scroll position in the document
-    pub current_scroll_pos: usize,
+    pub current_scroll_pos: LineNumber,
 
     // UI state
     /// Current application mode
@@ -68,11 +72,11 @@ pub struct App
     /// Current search query text
     pub search_text: String,
     /// Line numbers where search results were found
-    pub search_results: Vec<usize>,
+    pub search_results: Vec<LineNumber>,
     /// Index of the currently selected search result
-    pub current_search_index: usize,
+    pub current_search_index: LineNumber,
     /// Map of line numbers to their matching spans.
-    pub search_matches: HashMap<usize, Vec<(usize, usize)>>,
+    pub search_matches: HashMap<LineNumber, Vec<Range<usize>>>,
 }
 
 impl App
@@ -206,16 +210,19 @@ impl App
                         let mut spans = Vec::new();
                         let mut last_end = 0;
                         let mut sorted_matches = matches.clone();
-                        sorted_matches.sort_by_key(|&(start, _)| start);
+                        sorted_matches.sort_by_key(|range| range.start);
 
-                        for &(start, end) in &sorted_matches
+                        for range in sorted_matches
                         {
-                            if start > last_end
+                            if range.start > last_end
                             {
-                                spans.push(Span::raw(&line_str[last_end..start]));
+                                spans.push(Span::raw(&line_str[last_end..range.start]));
                             }
-                            spans.push(Span::styled(&line_str[start..end], HIGHLIGHT_STYLE));
-                            last_end = end;
+                            spans.push(Span::styled(
+                                &line_str[range.start..range.end],
+                                HIGHLIGHT_STYLE,
+                            ));
+                            last_end = range.end;
                         }
                         if last_end < line_str.len()
                         {
@@ -319,7 +326,7 @@ impl App
     /// # Arguments
     ///
     /// * `amount` - Number of lines to scroll up
-    pub fn scroll_up(&mut self, amount: usize)
+    pub fn scroll_up(&mut self, amount: LineNumber)
     {
         self.current_scroll_pos = self
             .current_scroll_pos
@@ -331,7 +338,7 @@ impl App
     /// # Arguments
     ///
     /// * `amount` - Number of lines to scroll down
-    pub fn scroll_down(&mut self, amount: usize)
+    pub fn scroll_down(&mut self, amount: LineNumber)
     {
         let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
         // Clamp the scroll position to the last line.
@@ -415,7 +422,7 @@ impl App
             for r#match in regex.find_iter(line)
             {
                 // Add the range of the match.
-                matches_in_line.push((r#match.start(), r#match.end()));
+                matches_in_line.push(r#match.range());
             }
 
             if !matches_in_line.is_empty()
