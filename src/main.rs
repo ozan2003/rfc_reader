@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use clap::{Arg, ArgAction, Command};
 #[allow(clippy::wildcard_imports)]
 use cli_log::*;
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
@@ -153,7 +153,8 @@ fn run_app<T: RatatuiBackend>(
     {
         terminal.draw(|frame| app.render(frame))?;
 
-        if let Event::Key(key) = event_handler.next()?
+        if let Event::Key(key) = event_handler.next()? &&
+            key.kind == KeyEventKind::Press // This is needed in Windows
         {
             match (app.mode, key.code)
             {
