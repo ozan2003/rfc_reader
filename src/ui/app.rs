@@ -147,13 +147,15 @@ impl App
                 .split(size)
         };
 
-        // If TOC is shown, render it
+        // If TOC is shown, render it on the left side (chunks[0])
         if self.show_toc
         {
             self.rfc_toc_panel.render(frame, chunks[0]);
         }
 
-        // Render the main content area
+        // Render the main content area on the right side (chunks[1])
+        // chunks[0] is the TOC if it is shown
+        // chunks[1] is the content if TOC is not shown
         let content_area = if self.show_toc { chunks[1] } else { chunks[0] };
 
         // Render the text with highlights if in search mode or if there is a search
