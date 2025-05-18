@@ -154,7 +154,8 @@ fn run_app<T: RatatuiBackend>(
         terminal.draw(|frame| app.render(frame))?;
 
         if let Event::Key(key) = event_handler.next()? &&
-            key.kind == KeyEventKind::Press // This is needed in Windows
+            key.kind == KeyEventKind::Press
+        // This is needed in Windows
         {
             match (app.mode, key.code)
             {
@@ -253,7 +254,7 @@ fn run_app<T: RatatuiBackend>(
                     app.reset_search_highlights();
                 }
 
-                // TOC navigation
+                // ToC navigation
                 (AppMode::Normal, KeyCode::Char('w')) if app.show_toc =>
                 {
                     app.rfc_toc_panel.previous();

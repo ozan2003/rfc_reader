@@ -137,7 +137,7 @@ pub(crate) mod parsing
 {
     use super::{LineNumber, Regex, TocEntry};
 
-    /// Parses the document by existing TOC.
+    /// Parses the document by existing ToC.
     ///
     /// # Arguments
     ///
@@ -146,17 +146,17 @@ pub(crate) mod parsing
     /// # Returns
     ///
     /// A vector of `TocEntry` instances representing the document's structure
-    /// or `None` if no TOC is found.
+    /// or `None` if no ToC is found.
     fn parse_toc_existing(content: &str) -> Option<Vec<TocEntry>>
     {
-        // TOC header patterns
+        // ToC header patterns
         const TOC_ENTRIES: [&str; 3] = [
             r"(?:Table of Contents|Contents)", // Standard header
             r"(?:TABLE OF CONTENTS)",          // All caps variant
             r"(?:\d+\.?\s+Table of Contents)", // Numbered ToC section
         ];
 
-        // Create a regex pattern to find TOC header
+        // Create a regex pattern to find ToC header
         let toc_pattern = format!(r"^\s*({})\s*$", TOC_ENTRIES.join("|"));
         let toc_regex = Regex::new(&toc_pattern).ok()?;
 
@@ -164,13 +164,13 @@ pub(crate) mod parsing
         let toc_entry_patterns = get_toc_entry_patterns()?;
         let section_heading = Regex::new(r"^\d+\.\s+\w+").ok()?;
 
-        // Find lines with TOC markers
+        // Find lines with ToC markers
         let lines: Vec<&str> = content.lines().collect();
 
-        // Find TOC start
+        // Find ToC start
         let start_index = find_toc_start(&lines, &toc_regex)?;
 
-        // Process TOC entries
+        // Process ToC entries
         let entries =
             extract_toc_entries(&lines, start_index, &toc_entry_patterns, &section_heading);
 
@@ -184,11 +184,11 @@ pub(crate) mod parsing
         }
     }
 
-    /// Helper function to get regex patterns for TOC entries
+    /// Helper function to get regex patterns for ToC entries
     ///
     /// # Returns
     ///
-    /// A vector of `Regex` instances representing the regex patterns for TOC
+    /// A vector of `Regex` instances representing the regex patterns for ToC
     /// entries, or `None` if any regex creation fails.
     fn get_toc_entry_patterns() -> Option<Vec<Regex>>
     {
@@ -200,16 +200,16 @@ pub(crate) mod parsing
         ])
     }
 
-    /// Find the start of TOC section.
+    /// Find the start of ToC section.
     ///
     /// # Arguments
     ///
     /// * `lines` - The lines of the document
-    /// * `toc_regex` - The regex to find the TOC header
+    /// * `toc_regex` - The regex to find the ToC header
     ///
     /// # Returns
     ///
-    /// The index of the start of the TOC section, or `None` if no TOC is found.
+    /// The index of the start of the ToC section, or `None` if no ToC is found.
     fn find_toc_start(lines: &[&str], toc_regex: &Regex) -> Option<LineNumber>
     {
         lines
@@ -218,7 +218,7 @@ pub(crate) mod parsing
             .find_map(|(index, line)| {
                 if toc_regex.is_match(line.trim())
                 {
-                    Some(index + 1) // Skip the TOC header line
+                    Some(index + 1) // Skip the ToC header line
                 }
                 else
                 {
@@ -227,13 +227,13 @@ pub(crate) mod parsing
             })
     }
 
-    /// Extract TOC entries from content.
+    /// Extract ToC entries from content.
     ///
     /// # Arguments
     ///
     /// * `lines` - The lines of the document
-    /// * `start_index` - The index of the start of the TOC section
-    /// * `toc_entry_patterns` - The regex patterns to find TOC entries
+    /// * `start_index` - The index of the start of the ToC section
+    /// * `toc_entry_patterns` - The regex patterns to find ToC entries
     /// * `section_heading` - The regex to find section headings
     ///
     /// # Returns
@@ -281,20 +281,20 @@ pub(crate) mod parsing
         entries
     }
 
-    /// Check if we should stop parsing the TOC
+    /// Check if we should stop parsing the ToC
     ///
     /// # Arguments
     ///
     /// * `trimmed_line` - The trimmed line to check
     /// * `section_heading` - The regex to find section headings
-    /// * `toc_entry_patterns` - The regex patterns to find TOC entries
+    /// * `toc_entry_patterns` - The regex patterns to find ToC entries
     /// * `has_found_entries` - Whether we have found any entries
     /// * `consecutive_empty_lines` - The number of consecutive empty lines
     /// * `lines_without_entries` - The number of lines without entries
     ///
     /// # Returns
     ///
-    /// A boolean indicating whether we should stop parsing the TOC
+    /// A boolean indicating whether we should stop parsing the ToC
     fn should_stop_parsing(
         trimmed_line: &str,
         section_heading: &Regex,
@@ -304,7 +304,7 @@ pub(crate) mod parsing
         lines_without_entries: &mut u8,
     ) -> bool
     {
-        // 1. Check for section headings outside TOC
+        // 1. Check for section headings outside ToC
         let does_look_like_section = section_heading.is_match(trimmed_line);
         let is_matching_toc_pattern = toc_entry_patterns
             .iter()
@@ -316,7 +316,7 @@ pub(crate) mod parsing
         }
 
         // 2. Check empty lines
-        // Multiple consecutive empty lines indicate the end of the TOC
+        // Multiple consecutive empty lines indicate the end of the ToC
         if trimmed_line.is_empty()
         {
             *consecutive_empty_lines += 1;
@@ -343,12 +343,12 @@ pub(crate) mod parsing
         false
     }
 
-    /// Try to extract a TOC entry from a line
+    /// Try to extract a ToC entry from a line
     ///
     /// # Arguments
     ///
     /// * `trimmed_line` - The trimmed line to check
-    /// * `toc_entry_patterns` - The regex patterns to find TOC entries
+    /// * `toc_entry_patterns` - The regex patterns to find ToC entries
     /// * `lines` - The lines of the document
     /// * `index` - The index of the line
     ///
@@ -382,7 +382,7 @@ pub(crate) mod parsing
 
                     if let Ok(section_regex) = Regex::new(&section_pattern)
                     {
-                        // Look for the section in the document after the TOC
+                        // Look for the section in the document after the ToC
                         for (line_number, doc_line) in lines.iter().enumerate().skip(index + 1)
                         {
                             if section_regex.is_match(doc_line)
@@ -405,7 +405,7 @@ pub(crate) mod parsing
     /// contents.
     ///
     /// Identifies section headers in RFC format (e.g., "1. Introduction") and
-    /// capitalized headings as TOC entries.
+    /// capitalized headings as ToC entries.
     ///
     /// # Arguments
     ///
@@ -418,7 +418,7 @@ pub(crate) mod parsing
     /// # Warning
     ///
     /// This function is not guaranteed to work correctly for all documents.
-    /// It is intended to be used as a last resort when no existing TOC is
+    /// It is intended to be used as a last resort when no existing ToC is
     /// found.
     fn parse_toc_heuristic(content: &str) -> Vec<TocEntry>
     {
@@ -466,7 +466,7 @@ pub(crate) mod parsing
     /// A vector of `TocEntry` instances representing the document's structure
     pub(crate) fn parse_toc(content: &str) -> Vec<TocEntry>
     {
-        // First, look for existing TOC. Otherwise, use heuristic.
+        // First, look for existing ToC. Otherwise, use heuristic.
         parse_toc_existing(content).unwrap_or_else(|| parse_toc_heuristic(content))
     }
 }

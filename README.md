@@ -38,16 +38,7 @@ Refer to `rfc_reader --help` for more options.
 
 ## Controls
 
-- k/j or UpArrow/DownArrow: Scroll up/down
-- f/b or PgDn/PgUp: Scroll page down/up
-- g/G: Go to start/end of document
-- t: Toggle table of contents
-- w/s: Navigate TOC up/down
-- /: Search
-- n/N: Next/previous search result
-- q: Quit
-- Esc: Reset search highlights
-- ?: Toggle help
+Refer to the [wiki](https://github.com/ozan2003/rfc_reader/wiki/Keybindings) for keybindings.
 
 ## Cache Location
 
