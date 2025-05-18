@@ -262,6 +262,10 @@ fn run_app<T: RatatuiBackend>(
                 {
                     app.rfc_toc_panel.next();
                 }
+                (AppMode::Normal, KeyCode::Enter) if app.show_toc =>
+                {
+                    app.jump_to_toc_entry();
+                }
 
                 _ =>
                 {} // Ignore other key combinations

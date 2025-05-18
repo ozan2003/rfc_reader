@@ -494,6 +494,15 @@ impl App
         self.search_matches.clear();
         self.current_search_index = 0;
     }
+
+    /// Jumps to the current TOC entry by scrolling to its line.
+    pub fn jump_to_toc_entry(&mut self)
+    {
+        if let Some(line) = self.rfc_toc_panel.selected_line()
+        {
+            self.current_scroll_pos = line;
+        }
+    }
 }
 
 /// Creates a centered rectangle inside the given area.
