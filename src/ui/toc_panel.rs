@@ -382,14 +382,14 @@ pub(crate) mod parsing
 
                     if let Ok(section_regex) = Regex::new(&section_pattern)
                     {
-                        // Look for this section in the document after the TOC
-                        for (line_index, doc_line) in lines.iter().enumerate().skip(index + 1)
+                        // Look for the section in the document after the TOC
+                        for (line_number, doc_line) in lines.iter().enumerate().skip(index + 1)
                         {
                             if section_regex.is_match(doc_line)
                             {
                                 return Some(TocEntry {
                                     title: format!("{section_num} {title}"),
-                                    line_number: line_index,
+                                    line_number,
                                 });
                             }
                         }
@@ -425,19 +425,19 @@ pub(crate) mod parsing
         let mut entries = Vec::new();
         let mut section_pattern = false;
 
-        for (index, line) in content.lines().enumerate()
+        for (line_number, line) in content.lines().enumerate()
         {
             let line = line.trim();
 
             // Check for section headers in typical RFC format
-            if line.starts_with(|c: char| c.is_ascii_digit()) && line.contains('.')
+            if line.starts_with(|ch: char| ch.is_ascii_digit()) && line.contains('.')
             {
                 let parts: Vec<&str> = line.splitn(2, '.').collect();
                 if parts.len() == 2 && !parts[0].contains(' ')
                 {
                     entries.push(TocEntry {
                         title: line.to_string(),
-                        line_number: index,
+                        line_number,
                     });
                     section_pattern = true;
                 }
@@ -447,7 +447,7 @@ pub(crate) mod parsing
             {
                 entries.push(TocEntry {
                     title: line.to_string(),
-                    line_number: index,
+                    line_number,
                 });
             }
         }
