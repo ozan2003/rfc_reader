@@ -42,6 +42,7 @@ Refer to `rfc_reader --help` for more options.
 - f/b or PgDn/PgUp: Scroll page down/up
 - g/G: Go to start/end of document
 - t: Toggle table of contents
+- w/s: Navigate TOC up/down
 - /: Search
 - n/N: Next/previous search result
 - q: Quit

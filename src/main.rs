@@ -253,6 +253,16 @@ fn run_app<T: RatatuiBackend>(
                     app.reset_search_highlights();
                 }
 
+                // TOC navigation
+                (AppMode::Normal, KeyCode::Char('w')) if app.show_toc =>
+                {
+                    app.rfc_toc_panel.previous();
+                }
+                (AppMode::Normal, KeyCode::Char('s')) if app.show_toc =>
+                {
+                    app.rfc_toc_panel.next();
+                }
+
                 _ =>
                 {} // Ignore other key combinations
             }

@@ -96,40 +96,22 @@ impl TocPanel
         frame.render_stateful_widget(list, area, &mut self.state);
     }
 
-    /// Moves the selection to the next entry, wrapping to the beginning if at
-    /// the end.
+    /// Moves the selection to the next entry.
     pub fn next(&mut self)
     {
         if let Some(i) = self.state.selected()
         {
-            self.state.select(Some(i + 1));
-        }
-        else
-        {
-            self.state.select(Some(0));
+            self.state.select(Some(i.saturating_add(1)));
         }
     }
 
-    /// Moves the selection to the previous entry, wrapping to the end if at the
-    /// beginning.
+    /// Moves the selection to the previous entry.
     pub fn previous(&mut self)
     {
-        let i = match self.state.selected()
+        if let Some(i) = self.state.selected()
         {
-            Some(i) =>
-            {
-                if i == 0
-                {
-                    self.entries.len() - 1
-                }
-                else
-                {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+            self.state.select(Some(i.saturating_sub(1)));
+        }
     }
 
     /// Returns the line number of the currently selected entry.

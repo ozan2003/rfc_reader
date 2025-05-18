@@ -270,6 +270,7 @@ impl App
             Line::from("f/b or PgDn/PgUp: Scroll page down/up"),
             Line::from("g/G: Go to start/end of document"),
             Line::from("t: Toggle table of contents"),
+            Line::from("w/s: Navigate TOC up/down"),
             Line::from("/: Search"),
             Line::from("n/N: Next/previous search result"),
             Line::from("Esc: Reset search highlights"),
