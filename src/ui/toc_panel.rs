@@ -164,7 +164,6 @@ pub(crate) mod parsing
         let toc_entry_patterns = get_toc_entry_patterns()?;
         let section_heading = Regex::new(r"^\d+\.\s+\w+").ok()?;
 
-        // Find lines with ToC markers
         let lines: Vec<&str> = content.lines().collect();
 
         // Find ToC start
