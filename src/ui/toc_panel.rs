@@ -14,6 +14,10 @@ use regex::Regex;
 
 use super::app::LineNumber;
 
+const TOC_HIGHLIGHT_STYLE: Style = Style::new()
+    .fg(Color::LightYellow)
+    .add_modifier(Modifier::BOLD);
+
 /// Represents an entry in the table of contents.
 ///
 /// Each entry contains a title and its corresponding line number
@@ -86,11 +90,7 @@ impl TocPanel
                     .title("Table of Contents")
                     .title_alignment(Alignment::Center),
             )
-            .highlight_style(
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            )
+            .highlight_style(TOC_HIGHLIGHT_STYLE)
             .highlight_symbol("> ");
 
         frame.render_stateful_widget(list, area, &mut self.state);
