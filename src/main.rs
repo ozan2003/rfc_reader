@@ -7,7 +7,7 @@ use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
 use rfc_reader::{get_log_dir, init_logging};
 use std::time::Duration;
-use tracing::{error, info, debug};
+use tracing::{debug, error, info};
 
 fn main() -> Result<()>
 {
@@ -145,26 +145,27 @@ fn main() -> Result<()>
 /// # Errors
 ///
 /// Returns an error if the terminal fails to draw to the screen.
+#[allow(clippy::too_many_lines)]
 fn run_app<T: RatatuiBackend>(
     terminal: &mut Terminal<T>,
     mut app: App,
     event_handler: &EventHandler,
 ) -> Result<()>
 {
-    loop
+    while app.should_run
     {
         terminal.draw(|frame| app.render(frame))?;
 
         if let Event::Key(key) = event_handler.next()? &&
-            key.kind == KeyEventKind::Press
         // This is needed in Windows
+            key.kind == KeyEventKind::Press
         {
             match (app.mode, key.code)
             {
                 // Quit with 'q' in normal mode
                 (AppMode::Normal, KeyCode::Char('q')) =>
                 {
-                    app.should_quit = true;
+                    app.should_run = false;
                 }
 
                 // Help toggle with '?'
@@ -273,11 +274,6 @@ fn run_app<T: RatatuiBackend>(
                 _ =>
                 {} // Ignore other key combinations
             }
-        }
-
-        if app.should_quit
-        {
-            break;
         }
     }
 

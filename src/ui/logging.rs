@@ -19,6 +19,19 @@ use tracing_subscriber::{
 };
 
 /// Initialize the logging system
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - Project directories cannot be determined
+/// - Log directory creation fails
+/// - File appender creation fails
+///
+/// # Panics
+///
+/// Panics if the environment filter cannot be created from the default
+/// environment and also cannot be created with the default value
+/// `rfc_reader=trace`.
 pub fn init_logging() -> anyhow::Result<()>
 {
     let project_dirs = ProjectDirs::from("com", "rfc_reader", "rfc_reader")
@@ -56,6 +69,10 @@ pub fn init_logging() -> anyhow::Result<()>
 }
 
 /// Get the path to the log directory
+///
+/// # Errors
+///
+/// Returns an error if project directories cannot be determined.
 pub fn get_log_dir() -> anyhow::Result<PathBuf>
 {
     let project_dirs = ProjectDirs::from("com", "rfc_reader", "rfc_reader")

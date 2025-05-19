@@ -65,8 +65,8 @@ pub struct App
     pub mode: AppMode,
     /// Flag indicating if the table of contents should be displayed
     pub show_toc: bool,
-    /// Flag indicating if the application should exit
-    pub should_quit: bool,
+    /// Flag indicating if the application should run
+    pub should_run: bool,
 
     // Search
     /// Current search query text
@@ -104,7 +104,7 @@ impl App
             rfc_line_number,
             current_scroll_pos: 0,
             mode: AppMode::Normal,
-            should_quit: false,
+            should_run: true,
             show_toc: false,
             search_text: String::with_capacity(20),
             search_results: Vec::with_capacity(50),
@@ -496,7 +496,7 @@ impl App
         self.current_search_index = 0;
     }
 
-    /// Jumps to the current ToC entry by scrolling to its line.
+    /// Jumps to the current `ToC` entry by scrolling to its line.
     pub fn jump_to_toc_entry(&mut self)
     {
         if let Some(line) = self.rfc_toc_panel.selected_line()
