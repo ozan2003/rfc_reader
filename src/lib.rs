@@ -23,3 +23,4 @@ pub use cache::RfcCache;
 pub use client::RfcClient;
 pub use ui::{App, AppMode, Event, EventHandler};
 pub use ui::{TerminalGuard, init_tui, init_panic_hook};
+pub use ui::logging::{get_log_dir, init_logging};

@@ -1,17 +1,18 @@
 use anyhow::{Context, Result};
 use clap::{Arg, ArgAction, Command};
-#[allow(clippy::wildcard_imports)]
-use cli_log::*;
 use crossterm::event::{KeyCode, KeyEventKind};
 use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
 use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
+use rfc_reader::{get_log_dir, init_logging};
 use std::time::Duration;
+use tracing::{error, info, debug};
 
 fn main() -> Result<()>
 {
     init_panic_hook();
+    init_logging()?;
 
     // Initialize cache
     let cache = RfcCache::new()?;
@@ -19,11 +20,12 @@ fn main() -> Result<()>
     // Parse command line arguments
     let matches = Command::new("rfc_reader")
         .about("A terminal-based RFC reader")
-        // Inform about the cache directory
+        // Inform about the cache and log directory
         .after_help(format!(
             "This program caches RFCs to improve performance.\nThe cache is stored in the \
-             following directory: {}",
-            cache.cache_dir().display()
+             following directory: {}\n\nThe log file is stored in the following directory: {}",
+            cache.cache_dir().display(),
+            get_log_dir().unwrap().display()
         ))
         .arg(
             Arg::new("rfc")
@@ -101,7 +103,7 @@ fn main() -> Result<()>
                 ));
             }
             // Fetch RFC from network since it's not in cache
-            info!("Fetching RFC {number} from network...");
+            debug!("Fetching RFC {number} from network...");
 
             let content = client
                 .fetch_rfc(number)

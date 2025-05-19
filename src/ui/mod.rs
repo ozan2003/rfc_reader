@@ -4,8 +4,9 @@
 //! including event handling, application state, and UI components.
 mod app;
 mod event;
-mod toc_panel;
 mod guard;
+pub(crate) mod logging;
+mod toc_panel;
 
 pub use app::{App, AppMode};
 pub use event::{Event, EventHandler};

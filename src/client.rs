@@ -5,6 +5,7 @@ use anyhow::{Context, Result};
 use std::io::Read;
 use std::time::Duration;
 use ureq::Agent;
+use tracing::debug;
 
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
 
@@ -64,12 +65,16 @@ impl RfcClient
             .call()
             .context(format!("Failed to fetch RFC {rfc_number}"))?;
 
+        debug!("Response: {:?}", response);
+
         let mut response_body = String::new();
         response
             .into_body()
             .into_reader()
             .read_to_string(&mut response_body)
             .context(format!("Failed to read RFC {rfc_number} content"))?;
+
+        debug!("Response body: {:?}", response_body);
 
         Ok(response_body
             .trim()
@@ -98,12 +103,16 @@ impl RfcClient
             .call()
             .context("Failed to fetch RFC index")?;
 
+        debug!("Response: {:?}", response);
+
         let mut response_body = String::new();
         response
             .into_body()
             .into_reader()
             .read_to_string(&mut response_body)
             .context("Failed to read RFC index content")?;
+
+        debug!("Response body: {:?}", response_body);
 
         Ok(response_body)
     }
