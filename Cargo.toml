@@ -2,6 +2,25 @@
 name = "rfc_reader"
 version = "0.1.0"
 edition = "2024"
+description = "A TUI based RFC viewer"
+repository = "https://github.com/ozan2003/rfc_reader"
+keywords = [
+    "rust",
+    "caching",
+    "viewer",
+    "table-of-contents",
+    "tui",
+    "argument-parsing",
+    "offline-capable",
+    "text-search",
+    "http-request",
+    "rfcs",
+    "reader-ui",
+    "request-for-comments",
+    "command-line",
+    "ratatui",
+]
+license-file = "LICENSE"
 
 [dependencies]
 anyhow = "1.0.98"
