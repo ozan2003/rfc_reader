@@ -72,7 +72,7 @@ fn main() -> Result<()>
     else if matches.get_flag("clear-log")
     {
         clear_log_file();
-        info!("Log file cleared successfully");
+        println!("Log file cleared successfully");
         return Ok(());
     }
     else if matches.get_flag("list")
