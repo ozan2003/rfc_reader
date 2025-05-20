@@ -31,6 +31,10 @@ pub static LOG_FILE_PATH: LazyLock<Mutex<PathBuf>> = LazyLock::new(|| {
 /// This function sets up the logging configuration, including the
 /// log file path, log level, and log format.
 ///
+/// # Panics
+///
+/// Panics if the log file path cannot be locked.
+///
 /// # Errors
 ///
 /// Returns an error if the log file cannot be opened or created.
@@ -60,6 +64,14 @@ pub fn init_logging() -> Result<()>
 /// # Returns
 ///
 /// Returns `Ok(())` if the file was successfully removed or didn't exist.
+/// Returns an error if the file exists but couldn't be removed.
+///
+/// # Panics
+///
+/// Panics if the log file path cannot be locked.
+///
+/// # Errors
+///
 /// Returns an error if the file exists but couldn't be removed.
 pub fn clear_log_file() -> Result<()>
 {
