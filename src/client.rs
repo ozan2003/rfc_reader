@@ -65,7 +65,7 @@ impl RfcClient
             .call()
             .context(format!("Failed to fetch RFC {rfc_number}"))?;
 
-        debug!("Response: {response:?}");
+        debug!("Got response: {response:?}");
 
         let mut response_body = String::new();
         response
