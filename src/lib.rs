@@ -21,6 +21,6 @@ mod ui;
 
 pub use cache::RfcCache;
 pub use client::RfcClient;
-pub use ui::logging::{LOG_FILE, clear_log_file, init_logging};
+pub use ui::logging::{LOG_FILE_PATH, clear_log_file, init_logging};
 pub use ui::{App, AppMode, Event, EventHandler};
 pub use ui::{TerminalGuard, init_panic_hook, init_tui};
