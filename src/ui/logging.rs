@@ -6,7 +6,7 @@
 use directories::BaseDirs;
 use env_logger::{Builder, Target, fmt::TimestampPrecision};
 use log::LevelFilter;
-use std::fs::{remove_file, File};
+use std::fs::{File, remove_file};
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
 
@@ -45,6 +45,12 @@ pub fn init_logging()
         .init();
 }
 
+/// Removes the log file.
+///
+/// # Panics
+///
+/// Panics if the log file lock cannot be acquired or if the file
+/// removal fails.
 pub fn clear_log_file()
 {
     let log_path = LOG_FILE.lock().unwrap();

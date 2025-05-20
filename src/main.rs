@@ -9,6 +9,7 @@ use rfc_reader::{LOG_FILE, clear_log_file, init_logging};
 use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
 use std::time::Duration;
 
+#[allow(clippy::too_many_lines)]
 fn main() -> Result<()>
 {
     init_panic_hook();
