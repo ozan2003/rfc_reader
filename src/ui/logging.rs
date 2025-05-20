@@ -1,81 +1,51 @@
 //! Logging utilities
 //!
-//! This module provides utilities for logging to the console and a file.
-//!
-//! The logging system is configured to log to a file and the console.
-//! The file is rotated daily and the log file is named `rfc_reader.log`.
-//! The log file is stored in the data directory of the application.
-//!
-//! The log level is set to `info` and can be changed by setting the `RUST_LOG`
-//! environment variable.
+//! This module provides functionality to initialize logging for the
+//! application.
 
+use directories::BaseDirs;
+use env_logger::{Builder, Target, fmt::TimestampPrecision};
+use log::LevelFilter;
+use std::fs::File;
 use std::path::PathBuf;
+use std::sync::{LazyLock, Mutex};
 
-use directories::ProjectDirs;
-use tracing_appender::rolling::RollingFileAppender;
-use tracing_error::ErrorLayer;
-use tracing_subscriber::{
-    self, filter::EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt,
-};
+// Static log file path that can be accessed from other modules
+pub static LOG_FILE: LazyLock<Mutex<PathBuf>> = LazyLock::new(|| {
+    let binding = BaseDirs::new().unwrap();
+    let log_dir = binding.cache_dir();
+    Mutex::new(log_dir.join("rfc_reader.log"))
+});
 
-/// Initialize the logging system
+/// Initializes the logging system for the application.
 ///
-/// # Errors
-///
-/// Returns an error if:
-/// - Project directories cannot be determined
-/// - Log directory creation fails
-/// - File appender creation fails
+/// This function sets up the logging configuration, including the
+/// log file path, log level, and log format.
 ///
 /// # Panics
 ///
-/// Panics if the environment filter cannot be created from the default
-/// environment and also cannot be created with the default value
-/// `rfc_reader=trace`.
-pub fn init_logging() -> anyhow::Result<()>
+/// Panics if the log file cannot be opened or created.
+pub fn init_logging()
 {
-    let project_dirs = ProjectDirs::from("com", "rfc_reader", "rfc_reader")
-        .ok_or_else(|| anyhow::anyhow!("Failed to determine project directories"))?;
+    // Use the static log file path
+    let log_path = LOG_FILE.lock().unwrap().clone();
 
-    let log_dir = project_dirs.data_dir().join("logs");
-    std::fs::create_dir_all(&log_dir)?;
+    let log_file = File::options()
+        .append(true)
+        .create(true)
+        .open(&log_path)
+        .expect("Failed to open log file");
 
-    let file_appender = RollingFileAppender::builder()
-        .rotation(tracing_appender::rolling::Rotation::DAILY)
-        .filename_prefix("rfc_reader")
-        .filename_suffix("log")
-        .build(&log_dir)?;
-
-    let file_layer = fmt::layer()
-        .with_ansi(false)
-        .with_writer(file_appender)
-        .with_target(true)
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_file(true)
-        .with_line_number(true);
-
-    let env_filter = EnvFilter::try_from_default_env()
-        .or_else(|_| EnvFilter::try_new("rfc_reader=trace"))
-        .unwrap();
-
-    tracing_subscriber::registry()
-        .with(env_filter)
-        .with(ErrorLayer::default())
-        .with(file_layer)
+    // Initialize the logger
+    Builder::new()
+        .filter_level(LevelFilter::Info)
+        .filter_module("rfc_reader", LevelFilter::Debug)
+        .format_timestamp(Some(TimestampPrecision::Millis))
+        .target(Target::Pipe(Box::new(log_file)))
         .init();
-
-    Ok(())
 }
 
-/// Get the path to the log directory
-///
-/// # Errors
-///
-/// Returns an error if project directories cannot be determined.
-pub fn get_log_dir() -> anyhow::Result<PathBuf>
+pub fn clear_log_file()
 {
-    let project_dirs = ProjectDirs::from("com", "rfc_reader", "rfc_reader")
-        .ok_or_else(|| anyhow::anyhow!("Failed to determine project directories"))?;
-    Ok(project_dirs.data_dir().join("logs"))
+    todo!("Implement log file clearing");
 }

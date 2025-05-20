@@ -6,11 +6,11 @@ use crossterm::ExecutableCommand;
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
+use log::error;
 use ratatui::Terminal;
 use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
 use std::io::{Result as IoResult, stdout};
 use std::panic::{set_hook, take_hook};
-use tracing::error;
 
 /// Manage terminal state with RAII
 ///

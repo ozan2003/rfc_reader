@@ -1,18 +1,18 @@
 use anyhow::{Context, Result};
 use clap::{Arg, ArgAction, Command};
 use crossterm::event::{KeyCode, KeyEventKind};
+use log::{debug, error, info};
 use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
+use rfc_reader::{LOG_FILE, clear_log_file, init_logging};
 use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
-use rfc_reader::{get_log_dir, init_logging};
 use std::time::Duration;
-use tracing::{debug, error, info};
 
 fn main() -> Result<()>
 {
     init_panic_hook();
-    init_logging()?;
+    init_logging();
 
     // Initialize cache
     let cache = RfcCache::new()?;
@@ -23,9 +23,9 @@ fn main() -> Result<()>
         // Inform about the cache and log directory
         .after_help(format!(
             "This program caches RFCs to improve performance.\nThe cache is stored in the \
-             following directory: {}\n\nThe log file is stored in the following directory: {}",
+             following directory: {}\n\nThe location of the log file is: {}",
             cache.cache_dir().display(),
-            get_log_dir().unwrap().display()
+            LOG_FILE.lock().unwrap().display()
         ))
         .arg(
             Arg::new("rfc")
@@ -37,6 +37,12 @@ fn main() -> Result<()>
             Arg::new("clear-cache")
                 .long("clear-cache")
                 .help("Clear the RFC cache")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
+            Arg::new("clear-log")
+                .long("clear-log")
+                .help("Clear the log file")
                 .action(ArgAction::SetTrue),
         )
         .arg(
@@ -61,6 +67,12 @@ fn main() -> Result<()>
         // Clear all cached RFCs
         cache.clear()?;
         info!("Cache cleared successfully");
+        return Ok(());
+    }
+    else if matches.get_flag("clear-log")
+    {
+        clear_log_file();
+        info!("Log file cleared successfully");
         return Ok(());
     }
     else if matches.get_flag("list")
