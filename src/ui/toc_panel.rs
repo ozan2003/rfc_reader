@@ -136,6 +136,33 @@ impl TocPanel
 pub(crate) mod parsing
 {
     use super::{LineNumber, Regex, TocEntry};
+    use std::sync::LazyLock;
+
+    // Static regex patterns for better performance
+    static TOC_HEADER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+        let toc_entries = [
+            r"(?:Table of Contents|Contents)", // Standard header
+            r"(?:TABLE OF CONTENTS)",          // All caps variant
+            r"(?:\d+\.?\s+Table of Contents)", // Numbered ToC section
+        ];
+        let pattern = format!(r"^\s*({})\s*$", toc_entries.join("|"));
+        Regex::new(&pattern).expect("Invalid TOC header regex")
+    });
+
+    static TOC_ENTRY_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
+        vec![
+            // Standard format with dots: "1. Introduction..................5"
+            Regex::new(r"^\s*(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
+                .expect("Invalid TOC entry regex"),
+            // Appendix format: "Appendix A. Example"
+            Regex::new(r"^\s*Appendix\s+([A-Z])\.?\s+(.*?)(?:\.{2,}\s*\d+)?$")
+                .expect("Invalid appendix regex"),
+        ]
+    });
+
+    static SECTION_HEADING_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^\d+\.\s+\w+").expect("Invalid section heading regex")
+    });
 
     /// Parses the document by existing `ToC`.
     ///
@@ -149,29 +176,14 @@ pub(crate) mod parsing
     /// or `None` if no `ToC` is found.
     fn parse_toc_existing(content: &str) -> Option<Vec<TocEntry>>
     {
-        // `ToC` header patterns
-        const TOC_ENTRIES: [&str; 3] = [
-            r"(?:Table of Contents|Contents)", // Standard header
-            r"(?:TABLE OF CONTENTS)",          // All caps variant
-            r"(?:\d+\.?\s+Table of Contents)", // Numbered ToC section
-        ];
-
-        // Create a regex pattern to find ToC header
-        let toc_pattern = format!(r"^\s*({})\s*$", TOC_ENTRIES.join("|"));
-        let toc_regex = Regex::new(&toc_pattern).ok()?;
-
-        // Prepare regex patterns
-        let toc_entry_patterns = get_toc_entry_patterns()?;
-        let section_heading = Regex::new(r"^\d+\.\s+\w+").ok()?;
-
         let lines: Vec<&str> = content.lines().collect();
 
         // Find ToC start
-        let start_index = find_toc_start(&lines, &toc_regex)?;
+        let start_index = find_toc_start(&lines, &TOC_HEADER_REGEX)?;
 
         // Process ToC entries
         let entries =
-            extract_toc_entries(&lines, start_index, &toc_entry_patterns, &section_heading);
+            extract_toc_entries(&lines, start_index, &TOC_ENTRY_PATTERNS, &SECTION_HEADING_REGEX);
 
         if entries.is_empty()
         {
@@ -181,22 +193,6 @@ pub(crate) mod parsing
         {
             Some(entries)
         }
-    }
-
-    /// Helper function to get regex patterns for `ToC` entries
-    ///
-    /// # Returns
-    ///
-    /// A vector of `Regex` instances representing the regex patterns for `ToC`
-    /// entries, or `None` if any regex creation fails.
-    fn get_toc_entry_patterns() -> Option<Vec<Regex>>
-    {
-        Some(vec![
-            // Standard format with dots: "1. Introduction..................5"
-            Regex::new(r"^\s*(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$").ok()?,
-            // Appendix format: "Appendix A. Example"
-            Regex::new(r"^\s*Appendix\s+([A-Z])\.?\s+(.*?)(?:\.{2,}\s*\d+)?$").ok()?,
-        ])
     }
 
     /// Find the start of `ToC` section.
