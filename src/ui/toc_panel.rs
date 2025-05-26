@@ -145,24 +145,23 @@ pub(crate) mod parsing
             r"(?:TABLE OF CONTENTS)",          // All caps variant
             r"(?:\d+\.?\s+Table of Contents)", // Numbered ToC section
         ];
-        let pattern = format!(r"^\s*({})\s*$", toc_entries.join("|"));
+        let pattern = format!("^({})$", toc_entries.join("|"));
         Regex::new(&pattern).expect("Invalid TOC header regex")
     });
 
     static TOC_ENTRY_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
         vec![
             // Standard format with dots: "1. Introduction..................5"
-            Regex::new(r"^\s*(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
+            Regex::new(r"^(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
                 .expect("Invalid TOC entry regex"),
             // Appendix format: "Appendix A. Example"
-            Regex::new(r"^\s*Appendix\s+([A-Z])\.?\s+(.*?)(?:\.{2,}\s*\d+)?$")
+            Regex::new(r"^Appendix\s+([A-Z])\.?\s+(.*?)(?:\.{2,}\s*\d+)?$")
                 .expect("Invalid appendix regex"),
         ]
     });
 
-    static SECTION_HEADING_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"^\d+\.\s+\w+").expect("Invalid section heading regex")
-    });
+    static SECTION_HEADING_REGEX: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^\d+\.\s+\w+").expect("Invalid section heading regex"));
 
     /// Parses the document by existing `ToC`.
     ///
@@ -182,8 +181,12 @@ pub(crate) mod parsing
         let start_index = find_toc_start(&lines, &TOC_HEADER_REGEX)?;
 
         // Process ToC entries
-        let entries =
-            extract_toc_entries(&lines, start_index, &TOC_ENTRY_PATTERNS, &SECTION_HEADING_REGEX);
+        let entries = extract_toc_entries(
+            &lines,
+            start_index,
+            &TOC_ENTRY_PATTERNS,
+            &SECTION_HEADING_REGEX,
+        );
 
         if entries.is_empty()
         {
@@ -251,7 +254,7 @@ pub(crate) mod parsing
             .iter()
             .enumerate()
             .skip(start_index)
-            .map(|(i, line)| (i, line.trim()))
+            .map(|(i, line)| (i, line.trim_end()))
         {
             // Check stopping conditions
             if should_stop_parsing(
@@ -423,7 +426,7 @@ pub(crate) mod parsing
 
         for (line_number, line) in content.lines().enumerate()
         {
-            let line = line.trim();
+            let line = line.trim_end();
 
             // Check for section headers in typical RFC format
             if line.starts_with(|ch: char| ch.is_ascii_digit()) && line.contains('.')
