@@ -139,6 +139,10 @@ pub(crate) mod parsing
     use std::sync::LazyLock;
 
     // Static regex patterns for better performance
+    //
+    // Note: Don't trim the leading whitespace or eat the other chars
+    // before beginning of the line so that we can distinguish the actual
+    // ToC entries from the section headings by preserving the indentation.
     static TOC_HEADER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         let toc_entries = [
             r"(?:Table of Contents|Contents)", // Standard header
