@@ -136,7 +136,7 @@ impl TocPanel
 pub(crate) mod parsing
 {
     use super::{LineNumber, Regex, TocEntry};
-    use std::sync::LazyLock;
+    use std::{str::Lines, sync::LazyLock};
 
     // Static regex patterns for better performance
     //
@@ -179,10 +179,10 @@ pub(crate) mod parsing
     /// or `None` if no `ToC` is found.
     fn parse_toc_existing(content: &str) -> Option<Vec<TocEntry>>
     {
-        let lines: Vec<&str> = content.lines().collect();
+        let lines = content.lines();
 
         // Find ToC start
-        let start_index = find_toc_start(&lines, &TOC_HEADER_REGEX)?;
+        let start_index = find_toc_start(lines.clone(), &TOC_HEADER_REGEX)?;
 
         // Process ToC entries
         let entries = extract_toc_entries(
@@ -213,21 +213,18 @@ pub(crate) mod parsing
     ///
     /// The index of the start of the `ToC` section, or `None` if no `ToC` is
     /// found.
-    fn find_toc_start(lines: &[&str], toc_regex: &Regex) -> Option<LineNumber>
+    fn find_toc_start(lines: Lines<'_>, toc_regex: &Regex) -> Option<LineNumber>
     {
-        lines
-            .iter()
-            .enumerate()
-            .find_map(|(index, line)| {
-                if toc_regex.is_match(line.trim())
-                {
-                    Some(index + 1) // Skip the `ToC` header line
-                }
-                else
-                {
-                    None
-                }
-            })
+        lines.enumerate().find_map(|(index, line)| {
+            if toc_regex.is_match(line.trim())
+            {
+                Some(index + 1) // Skip the `ToC` header line
+            }
+            else
+            {
+                None
+            }
+        })
     }
 
     /// Extract `ToC` entries from content.
@@ -243,7 +240,7 @@ pub(crate) mod parsing
     ///
     /// A vector of `TocEntry` instances representing the document's structure
     fn extract_toc_entries(
-        lines: &[&str],
+        lines: &Lines<'_>,
         start_index: LineNumber,
         toc_entry_patterns: &[Regex],
         section_heading: &Regex,
@@ -255,7 +252,7 @@ pub(crate) mod parsing
         let mut lines_without_entries = 0;
 
         for (index, trimmed_line) in lines
-            .iter()
+            .clone()
             .enumerate()
             .skip(start_index)
             .map(|(i, line)| (i, line.trim_end()))
@@ -274,7 +271,8 @@ pub(crate) mod parsing
             }
 
             // Try to match and extract entries
-            if let Some(entry) = try_extract_entry(trimmed_line, toc_entry_patterns, lines, index)
+            if let Some(entry) =
+                try_extract_entry(trimmed_line, toc_entry_patterns, lines.clone(), index)
             {
                 has_found_entries = true;
                 entries.push(entry);
@@ -362,7 +360,7 @@ pub(crate) mod parsing
     fn try_extract_entry(
         trimmed_line: &str,
         toc_entry_patterns: &[Regex],
-        lines: &[&str],
+        lines: Lines<'_>,
         index: LineNumber,
     ) -> Option<TocEntry>
     {
@@ -386,7 +384,7 @@ pub(crate) mod parsing
                     if let Ok(section_regex) = Regex::new(&section_pattern)
                     {
                         // Look for the section in the document after the ToC
-                        for (line_number, doc_line) in lines.iter().enumerate().skip(index + 1)
+                        for (line_number, doc_line) in lines.enumerate().skip(index + 1)
                         {
                             if section_regex.is_match(doc_line)
                             {
