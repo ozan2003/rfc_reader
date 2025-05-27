@@ -133,7 +133,7 @@ impl TocPanel
     }
 }
 
-pub(crate) mod parsing
+pub mod parsing
 {
     use super::{LineNumber, Regex, TocEntry};
     use std::{str::Lines, sync::LazyLock};
@@ -465,7 +465,7 @@ pub(crate) mod parsing
     /// # Returns
     ///
     /// A vector of `TocEntry` instances representing the document's structure
-    pub(crate) fn parse_toc(content: &str) -> Vec<TocEntry>
+    pub fn parse_toc(content: &str) -> Vec<TocEntry>
     {
         // First, look for existing ToC. Otherwise, use heuristic.
         parse_toc_existing(content).unwrap_or_else(|| parse_toc_heuristic(content))

@@ -1,5 +1,5 @@
 [alias]
-lint = "clippy -- -W clippy::pedantic -W clippy::correctness -W clippy::style -W clippy::complexity -W clippy::perf -A clippy::uninlined-format-args"
+lint = "clippy -- -W clippy::pedantic -W clippy::correctness -W clippy::style -W clippy::complexity -W clippy::perf -W clippy::missing-const-for-fn -W clippy::redundant-clone -W clippy::derive-partial-eq-without-eq -W clippy::unnecessary-struct-initialization -W clippy::redundant-pub-crate -A clippy::uninlined-format-args"
 
 [build]
 rustflags = ["-C", "target-cpu=native", "-Z", "threads=8"]

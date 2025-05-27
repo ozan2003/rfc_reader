@@ -74,10 +74,9 @@ impl RfcClient
             .read_to_string(&mut response_body)
             .context(format!("Failed to read RFC {rfc_number} content"))?;
 
-        Ok(response_body
-            .trim()
-            .replace('\x0c', "") // Remove the unnecesary form feed.
-            .to_string())
+        Ok(
+            response_body.trim().replace('\x0c', ""), // Remove the unnecesary form feed.
+        )
     }
 
     /// Fetch the RFC index.

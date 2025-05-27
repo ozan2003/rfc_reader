@@ -221,7 +221,7 @@ impl RfcCache
     ///
     /// The cache directory.
     #[must_use]
-    pub fn cache_dir(&self) -> &PathBuf
+    pub const fn cache_dir(&self) -> &PathBuf
     {
         &self.cache_dir
     }

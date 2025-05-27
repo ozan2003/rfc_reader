@@ -5,7 +5,7 @@
 mod app;
 mod event;
 mod guard;
-pub(crate) mod logging;
+pub mod logging;
 mod toc_panel;
 
 pub use app::{App, AppMode};

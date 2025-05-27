@@ -26,7 +26,7 @@ const HIGHLIGHT_STYLE: Style = Style::new()
 /// Application mode that determines the current UI state.
 ///
 /// Controls what is displayed and how user input is interpreted.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppMode
 {
     /// Normal reading mode - default state
@@ -220,11 +220,9 @@ impl App
                             {
                                 spans.push(Span::raw(&line_str[last_end..range.start]));
                             }
-                            spans.push(Span::styled(
-                                &line_str[range.start..range.end],
-                                HIGHLIGHT_STYLE,
-                            ));
                             last_end = range.end;
+
+                            spans.push(Span::styled(&line_str[range], HIGHLIGHT_STYLE));
                         }
                         if last_end < line_str.len()
                         {
@@ -330,7 +328,7 @@ impl App
     /// # Arguments
     ///
     /// * `amount` - Number of lines to scroll up
-    pub fn scroll_up(&mut self, amount: LineNumber)
+    pub const fn scroll_up(&mut self, amount: LineNumber)
     {
         self.current_scroll_pos = self
             .current_scroll_pos
@@ -363,7 +361,7 @@ impl App
     }
 
     /// Toggles the table of contents panel.
-    pub fn toggle_toc(&mut self)
+    pub const fn toggle_toc(&mut self)
     {
         self.show_toc = !self.show_toc;
     }
@@ -376,7 +374,7 @@ impl App
     }
 
     /// Exits search mode and returns to normal mode.
-    pub fn exit_search_mode(&mut self)
+    pub const fn exit_search_mode(&mut self)
     {
         self.mode = AppMode::Normal;
     }
