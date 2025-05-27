@@ -53,7 +53,7 @@ impl RfcCache
     /// # Returns
     ///
     /// Some(String) containing the RFC content if it exists in the cache,
-    /// or None if the RFC is not cached or cannot be read.
+    /// or None if the RFC is not cached or cannot be read from the cache.
     #[must_use]
     pub fn get_cached_rfc(&self, rfc_number: u16) -> Option<String>
     {

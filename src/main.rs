@@ -94,46 +94,39 @@ fn main() -> Result<()>
     // Get RFC if specified
     let rfc_number = matches
         .get_one::<String>("rfc")
-        .and_then(|s| s.parse::<u16>().ok());
+        .and_then(|arg| arg.parse::<u16>().ok())
+        .ok_or(anyhow::anyhow!("Invalid RFC number"))?;
 
-    // Placeholder for getting RFC content
-    let (rfc_number, rfc_content) = if let Some(number) = rfc_number
+    // Get the RFC content - first check cache, then fetch from network if needed
+    let rfc_content = if let Some(cached_content) = cache.get_cached_rfc(rfc_number)
     {
-        // Get the RFC content - first check cache, then fetch from network if needed
-        let content = if let Some(cached_content) = cache.get_cached_rfc(number)
-        {
-            info!("Using cached version of RFC {number}");
-            cached_content
-        }
-        else
-        {
-            let is_offline = matches.get_flag("offline");
-            if is_offline
-            {
-                error!("Cannot load RFC {number} - not in cache and offline mode is enabled");
-                return Err(anyhow::anyhow!(
-                    "Cannot load RFC {number} - not in cache and offline mode is enabled"
-                ));
-            }
-            // Fetch RFC from network since it's not in cache
-            debug!("Fetching RFC {number} from network...");
-
-            let content = client
-                .fetch_rfc(number)
-                .context(format!("Failed to fetch RFC {number}"))?;
-
-            // Cache the fetched content for future use.
-            cache
-                .cache_rfc(number, &content)
-                .context(format!("Could not cache RFC {number}"))?;
-            content
-        };
-        (number, content)
+        info!("Using cached version of RFC {rfc_number}");
+        cached_content
     }
     else
     {
-        error!("No RFC number provided");
-        return Err(anyhow::anyhow!("No RFC number provided"));
+        let is_offline = matches.get_flag("offline");
+        if is_offline
+        {
+            error!("Cannot load RFC {rfc_number} - not in cache and offline mode is enabled");
+            return Err(anyhow::anyhow!(
+                "Cannot load RFC {rfc_number} - not in cache and offline mode is enabled"
+            ));
+        }
+        // Fetch RFC from network since it's not in cache
+        debug!("Fetching RFC {rfc_number} from network...");
+
+        let content = client
+            .fetch_rfc(rfc_number)
+            .context(format!("Failed to fetch RFC {rfc_number}"))?;
+
+        // Cache the fetched content for future use.
+        cache
+            .cache_rfc(rfc_number, &content)
+            .context(format!("Could not cache RFC {rfc_number}"))?;
+
+        debug!("Cached RFC {rfc_number}");
+        content
     };
 
     // Create app state
