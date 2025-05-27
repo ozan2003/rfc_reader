@@ -1,6 +1,6 @@
 # RFC Reader
 
-A CLI tool to read RFCs (Request for Comments) in the terminal. This tool allows you to fetch, cache, and browse RFC documents with a TUI.
+A tool to read RFCs (Request for Comments) with a TUI, allowing you to fetch, cache, and browse RFC documents.
 
 ## Features
 
@@ -9,6 +9,14 @@ A CLI tool to read RFCs (Request for Comments) in the terminal. This tool allows
 - Full text search functionality within documents
 - Table of contents navigation
 - Keyboard-driven interface with intuitive controls
+
+## Screenshots
+
+[![rfc-reader.png](https://i.postimg.cc/7Lx5RrDz/rfc-reader.png)](https://postimg.cc/fVrW3FVW)
+
+[![rfc-reader-toc.png](https://i.postimg.cc/xdtXDpT4/rfc-reader-toc.png)](https://postimg.cc/CZnhbN8G)
+
+[![rfc-reader-search.png](https://i.postimg.cc/4xvKwxCZ/rfc-reader-search.png)](https://postimg.cc/XrJ7Y37D)
 
 ## Usage
 
