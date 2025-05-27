@@ -132,8 +132,8 @@ fn main() -> Result<()>
     // Create app state
     let app = App::new(rfc_number, rfc_content);
 
-    // Create event handler with 250ms tick rate
-    let event_handler = EventHandler::new(Duration::from_millis(250));
+    // Create event handler.
+    let event_handler = EventHandler::new(Duration::from_millis(200));
 
     // Terminal will be cleaned up automatically when _terminal_guard is dropped
     // Just propagate any error from run_app
