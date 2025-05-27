@@ -438,8 +438,15 @@ impl App
             }
         }
 
-        // Jump to the first result.
-        self.current_search_index = 0;
+        // Jump to the first result from our location.
+        // Find the first result after our current position.
+        self.current_search_index = self
+            .search_results
+            .iter()
+            .enumerate()
+            .find(|&(_cur_index, &line_num)| line_num >= self.current_scroll_pos)
+            .map_or(self.search_results.len() - 1, |(cur_index, _)| cur_index);
+
         if !self.search_results.is_empty()
         {
             self.jump_to_search_result();
@@ -454,7 +461,7 @@ impl App
             return;
         }
 
-        if self.current_search_index != self.search_results.len() - 1
+        if self.current_search_index < self.search_results.len() - 1
         {
             self.current_search_index += 1;
             self.jump_to_search_result();
@@ -469,7 +476,7 @@ impl App
             return;
         }
 
-        if self.current_search_index != 0
+        if self.current_search_index > 0
         {
             self.current_search_index -= 1;
             self.jump_to_search_result();
