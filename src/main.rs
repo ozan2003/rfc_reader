@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::{Arg, ArgAction, Command};
 use crossterm::event::{KeyCode, KeyEventKind};
 use log::{debug, error, info};
@@ -94,7 +94,7 @@ fn main() -> Result<()>
     // Get RFC if specified
     let rfc_number = matches
         .get_one::<String>("rfc")
-        .ok_or(anyhow::anyhow!("No RFC number is provided"))?
+        .ok_or(anyhow!("No RFC number is provided"))?
         .parse::<u16>()
         .context("Invalid RFC number")?;
 
@@ -110,7 +110,7 @@ fn main() -> Result<()>
         if is_offline
         {
             error!("Cannot load RFC {rfc_number} - not in cache and offline mode is enabled");
-            return Err(anyhow::anyhow!(
+            return Err(anyhow!(
                 "Cannot load RFC {rfc_number} - not in cache and offline mode is enabled"
             ));
         }
