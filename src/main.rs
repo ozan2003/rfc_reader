@@ -94,8 +94,9 @@ fn main() -> Result<()>
     // Get RFC if specified
     let rfc_number = matches
         .get_one::<String>("rfc")
-        .and_then(|arg| arg.parse::<u16>().ok())
-        .ok_or(anyhow::anyhow!("Invalid RFC number"))?;
+        .ok_or(anyhow::anyhow!("No RFC number is provided"))?
+        .parse::<u16>()
+        .context("Invalid RFC number")?;
 
     // Get the RFC content - first check cache, then fetch from network if needed
     let rfc_content = if let Some(cached_content) = cache.get_cached_rfc(rfc_number)
