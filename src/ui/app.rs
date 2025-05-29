@@ -481,11 +481,11 @@ impl App
     /// Jumps to the current search result by scrolling to its line.
     fn jump_to_search_result(&mut self)
     {
-        if let Some(line) = self
+        if let Some(line_num) = self
             .search_results
             .get(self.current_search_index)
         {
-            self.current_scroll_pos = *line;
+            self.current_scroll_pos = *line_num;
         }
     }
 
@@ -501,9 +501,9 @@ impl App
     /// Jumps to the current `ToC` entry by scrolling to its line.
     pub fn jump_to_toc_entry(&mut self)
     {
-        if let Some(line) = self.rfc_toc_panel.selected_line()
+        if let Some(line_num) = self.rfc_toc_panel.selected_line()
         {
-            self.current_scroll_pos = line;
+            self.current_scroll_pos = line_num;
         }
     }
 }
