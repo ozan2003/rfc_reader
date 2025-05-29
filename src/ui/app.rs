@@ -436,14 +436,11 @@ impl App
             }
         }
 
-        // Jump to the first result from our location.
-        // Find the first result after our current position.
+        // Jump to the first result starting from our location.
         self.current_search_index = self
             .search_results
-            .iter()
-            .enumerate()
-            .find(|&(_cur_index, &line_num)| line_num >= self.current_scroll_pos)
-            .map_or(self.search_results.len() - 1, |(cur_index, _)| cur_index);
+            // First position where line_num >= self.current_scroll_pos
+            .partition_point(|&line_num: &LineNumber| line_num < self.current_scroll_pos);
 
         if !self.search_results.is_empty()
         {
