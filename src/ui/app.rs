@@ -92,24 +92,17 @@ impl App
     ///
     /// A new `App` instance initialized for the specified RFC
     #[must_use]
-    pub fn new(rfc_number: u16, content: String) -> Self
+    pub fn new(rfc_number: u16, rfc_content: String) -> Self
     {
-        let toc_panel = TocPanel::new(&content);
-        let rfc_line_number = content.lines().count();
+        let rfc_toc_panel = TocPanel::new(&rfc_content);
+        let rfc_line_number = rfc_content.lines().count();
 
         Self {
-            rfc_content: content,
+            rfc_content,
             rfc_number,
-            rfc_toc_panel: toc_panel,
+            rfc_toc_panel,
             rfc_line_number,
-            current_scroll_pos: 0,
-            mode: AppMode::Normal,
-            should_run: true,
-            show_toc: false,
-            search_text: String::with_capacity(20),
-            search_results: Vec::with_capacity(50),
-            current_search_index: 0,
-            search_matches: HashMap::with_capacity(50),
+            ..Default::default()
         }
     }
 
@@ -504,6 +497,27 @@ impl App
         if let Some(line_num) = self.rfc_toc_panel.selected_line()
         {
             self.current_scroll_pos = line_num;
+        }
+    }
+}
+
+impl Default for App
+{
+    fn default() -> Self
+    {
+        Self {
+            rfc_content: String::with_capacity(10000),
+            rfc_number: 0,
+            rfc_toc_panel: TocPanel::default(),
+            rfc_line_number: 0,
+            current_scroll_pos: 0,
+            mode: AppMode::Normal,
+            should_run: true,
+            show_toc: false,
+            search_text: String::with_capacity(20),
+            search_results: Vec::with_capacity(50),
+            current_search_index: 0,
+            search_matches: HashMap::with_capacity(50),
         }
     }
 }

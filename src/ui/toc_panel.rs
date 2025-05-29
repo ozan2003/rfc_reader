@@ -22,7 +22,7 @@ const TOC_HIGHLIGHT_STYLE: Style = Style::new()
 ///
 /// Each entry contains a title and its corresponding line number
 /// in the document content.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TocEntry
 {
     /// The title text of the section
@@ -34,6 +34,7 @@ pub struct TocEntry
 /// Panel that displays and manages a table of contents.
 ///
 /// Provides navigation capabilities and tracks the currently selected entry.
+#[derive(Default)]
 pub struct TocPanel
 {
     /// Collection of table of contents entries
