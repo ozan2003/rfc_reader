@@ -366,19 +366,20 @@ impl App
     /// * `frame` - The frame to render the no search results message to
     fn render_no_search_results(frame: &mut Frame)
     {
-        let area = centered_rect(60, 20, frame.area());
+        let area = centered_rect(30, 15, frame.area());
 
         frame.render_widget(Clear, area);
 
-        let text = Text::raw("No search results found");
+        let text = Text::raw("Search yielded nothing");
 
         let no_search_box = Paragraph::new(text)
             .block(
                 Block::default()
+                    .title("No matches - Press Esc to dismiss")
                     .borders(Borders::ALL)
-                    .title("No search results")
-                    .style(Style::default()),
+                    .style(Style::default().fg(Color::Red)),
             )
+            .alignment(Alignment::Center)
             .style(Style::default());
 
         frame.render_widget(no_search_box, area);
