@@ -297,7 +297,7 @@ impl App
 
         // Vim-like controls
         let text = Text::from(vec![
-            Line::from("RFC Reader Help:"),
+            Line::from("Keybindings:"),
             Line::from(""),
             Line::from("j/k or ↓/↑: Scroll down/up"),
             Line::from("f/b or PgDn/PgUp: Scroll page down/up"),
@@ -316,7 +316,8 @@ impl App
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Help")
+                    .title("RFC Reader Help")
+                    .title_alignment(Alignment::Center)
                     .style(Style::default()),
             )
             .style(Style::default())
