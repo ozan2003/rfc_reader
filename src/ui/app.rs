@@ -366,7 +366,7 @@ impl App
     /// * `frame` - The frame to render the no search results message to
     fn render_no_search_results(frame: &mut Frame)
     {
-        let area = centered_rect(30, 15, frame.area());
+        let area = centered_rect(40, 25, frame.area());
 
         frame.render_widget(Clear, area);
 
