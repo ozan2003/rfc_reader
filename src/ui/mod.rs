@@ -8,6 +8,6 @@ mod guard;
 pub mod logging;
 mod toc_panel;
 
-pub use app::{App, AppMode};
+pub use app::{App, AppMode, AppStateFlags};
 pub use event::{Event, EventHandler};
 pub use guard::{TerminalGuard, init_panic_hook, init_tui};

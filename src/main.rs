@@ -4,7 +4,7 @@ use crossterm::event::{KeyCode, KeyEventKind};
 use log::{debug, error, info};
 use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
-use rfc_reader::{App, AppMode, Event, EventHandler, RfcCache, RfcClient};
+use rfc_reader::{App, AppMode, AppStateFlags, Event, EventHandler, RfcCache, RfcClient};
 use rfc_reader::{LOG_FILE_PATH, clear_log_file, init_logging};
 use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
 use std::time::Duration;
@@ -159,7 +159,9 @@ fn run_app<T: RatatuiBackend>(
     event_handler: &EventHandler,
 ) -> Result<()>
 {
-    while app.should_run
+    while app
+        .app_state
+        .contains(AppStateFlags::SHOULD_RUN)
     {
         terminal.draw(|frame| app.render(frame))?;
 
@@ -172,7 +174,8 @@ fn run_app<T: RatatuiBackend>(
                 // Quit with 'q' in normal mode
                 (AppMode::Normal, KeyCode::Char('q')) =>
                 {
-                    app.should_run = false;
+                    app.app_state
+                        .remove(AppStateFlags::SHOULD_RUN);
                 }
 
                 // Help toggle with '?'
@@ -253,15 +256,24 @@ fn run_app<T: RatatuiBackend>(
                 }
 
                 // ToC navigation
-                (AppMode::Normal, KeyCode::Char('w')) if app.show_toc =>
+                (AppMode::Normal, KeyCode::Char('w'))
+                    if app
+                        .app_state
+                        .contains(AppStateFlags::SHOW_TOC) =>
                 {
                     app.rfc_toc_panel.previous();
                 }
-                (AppMode::Normal, KeyCode::Char('s')) if app.show_toc =>
+                (AppMode::Normal, KeyCode::Char('s'))
+                    if app
+                        .app_state
+                        .contains(AppStateFlags::SHOW_TOC) =>
                 {
                     app.rfc_toc_panel.next();
                 }
-                (AppMode::Normal, KeyCode::Enter) if app.show_toc =>
+                (AppMode::Normal, KeyCode::Enter)
+                    if app
+                        .app_state
+                        .contains(AppStateFlags::SHOW_TOC) =>
                 {
                     app.jump_to_toc_entry();
                 }

@@ -3,6 +3,7 @@
 //! This module provides the main application state and logic for the RFC
 //! reader. It handles the display and interaction with RFC documents including
 //! scrolling, searching, and navigation.
+use bitflags::bitflags;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -37,6 +38,28 @@ pub enum AppMode
     Search,
 }
 
+bitflags! {
+    /// Flags indicating the current state of the application.
+    #[derive(Debug)]
+    pub struct AppStateFlags: u8
+    {
+        /// Flag indicating the application should run
+        const SHOULD_RUN = 1;
+        /// Flag indicating table of contents should be displayed
+        const SHOW_TOC = 1 << 1;
+        /// Search yields no results.
+        const HAS_NO_RESULTS = 1 << 2;
+    }
+}
+
+impl Default for AppStateFlags
+{
+    fn default() -> Self
+    {
+        Self::SHOULD_RUN
+    }
+}
+
 /// Type alias for line numbers.
 pub(super) type LineNumber = usize;
 
@@ -63,10 +86,8 @@ pub struct App
     // UI state
     /// Current application mode
     pub mode: AppMode,
-    /// Flag indicating if the table of contents should be displayed
-    pub show_toc: bool,
-    /// Flag indicating if the application should run
-    pub should_run: bool,
+    /// Flags for managing the application state.
+    pub app_state: AppStateFlags,
 
     // Search
     /// Current search query text
@@ -103,89 +124,6 @@ impl App
             rfc_toc_panel,
             rfc_line_number,
             ..Default::default()
-        }
-    }
-
-    /// Renders the application UI to the provided frame.
-    ///
-    /// # Arguments
-    ///
-    /// * `frame` - The frame to render the UI to
-    ///
-    /// # Panics
-    ///
-    /// Panics if the frame is not the correct size.
-    pub fn render(&mut self, frame: &mut Frame)
-    {
-        // Clear the entire frame on each render to prevent artifacts
-        frame.render_widget(Clear, frame.area());
-
-        // Normal mode layout
-        let size = frame.area();
-
-        let chunks = if self.show_toc
-        {
-            // Create layout with ToC panel on the left
-            Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
-                .split(size)
-        }
-        else
-        {
-            // Full-width layout for content only
-            Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(100)].as_ref())
-                .split(size)
-        };
-
-        // If ToC is shown, render it on the left side (chunks[0])
-        if self.show_toc
-        {
-            self.rfc_toc_panel.render(frame, chunks[0]);
-        }
-
-        // Render the main content area on the right side (chunks[1])
-        // chunks[0] is the ToC if it is shown
-        // chunks[1] is the content if ToC is not shown
-        let content_area = if self.show_toc { chunks[1] } else { chunks[0] };
-
-        // Render the text with highlights if in search mode or if there is a search
-        // text
-        let text = self.build_text();
-        let title = format!("RFC {} - Press ? for help", self.rfc_number);
-
-        let paragraph = Paragraph::new(text)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title)
-                    .title_alignment(Alignment::Center),
-            )
-            .scroll((self.current_scroll_pos.try_into().unwrap(), 0));
-
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("↑"))
-            .end_symbol(Some("↓"));
-
-        let mut scrollbar_state =
-            ScrollbarState::new(self.rfc_line_number).position(self.current_scroll_pos);
-
-        // Rendering the paragraph and the scrollbar happens here.
-        frame.render_widget(paragraph, content_area);
-        frame.render_stateful_widget(scrollbar, content_area, &mut scrollbar_state);
-
-        // Render help if in help mode
-        if self.mode == AppMode::Help
-        {
-            Self::render_help(frame);
-        }
-
-        // Render search if in search mode
-        if self.mode == AppMode::Search
-        {
-            self.render_search(frame);
         }
     }
 
@@ -237,6 +175,110 @@ impl App
         {
             // No highlights
             Text::raw(&self.rfc_content)
+        }
+    }
+
+    /// Renders the application UI to the provided frame.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame` - The frame to render the UI to
+    ///
+    /// # Panics
+    ///
+    /// Panics if the frame is not the correct size.
+    pub fn render(&mut self, frame: &mut Frame)
+    {
+        // Clear the entire frame on each render to prevent artifacts
+        frame.render_widget(Clear, frame.area());
+
+        // Normal mode layout
+        let size = frame.area();
+
+        let chunks = if self
+            .app_state
+            .contains(AppStateFlags::SHOW_TOC)
+        {
+            // Create layout with ToC panel on the left
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
+                .split(size)
+        }
+        else
+        {
+            // Full-width layout for content only
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(100)].as_ref())
+                .split(size)
+        };
+
+        // If ToC is shown, render it on the left side (chunks[0])
+        if self
+            .app_state
+            .contains(AppStateFlags::SHOW_TOC)
+        {
+            self.rfc_toc_panel.render(frame, chunks[0]);
+        }
+
+        // Render the main content area on the right side (chunks[1])
+        // chunks[0] is the ToC if it is shown
+        // chunks[1] is the content if ToC is not shown
+        let content_area = if self
+            .app_state
+            .contains(AppStateFlags::SHOW_TOC)
+        {
+            chunks[1]
+        }
+        else
+        {
+            chunks[0]
+        };
+
+        // Render the text with highlights if in search mode or if there is a search
+        // text
+        let text = self.build_text();
+        let title = format!("RFC {} - Press ? for help", self.rfc_number);
+
+        let paragraph = Paragraph::new(text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(title)
+                    .title_alignment(Alignment::Center),
+            )
+            .scroll((self.current_scroll_pos.try_into().unwrap(), 0));
+
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+
+        let mut scrollbar_state =
+            ScrollbarState::new(self.rfc_line_number).position(self.current_scroll_pos);
+
+        // Rendering the paragraph and the scrollbar happens here.
+        frame.render_widget(paragraph, content_area);
+        frame.render_stateful_widget(scrollbar, content_area, &mut scrollbar_state);
+
+        // Render help if in help mode
+        if self.mode == AppMode::Help
+        {
+            Self::render_help(frame);
+        }
+
+        // Render search if in search mode
+        if self.mode == AppMode::Search
+        {
+            self.render_search(frame);
+        }
+
+        // Render no search message
+        if self
+            .app_state
+            .contains(AppStateFlags::HAS_NO_RESULTS)
+        {
+            Self::render_no_search_results(frame);
         }
     }
 
@@ -316,6 +358,31 @@ impl App
         frame.render_widget(search_box, area);
     }
 
+    /// Renders the no search results message.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame` - The frame to render the no search results message to
+    fn render_no_search_results(frame: &mut Frame)
+    {
+        let area = centered_rect(60, 20, frame.area());
+
+        frame.render_widget(Clear, area);
+
+        let text = Text::raw("No search results found");
+
+        let no_search_box = Paragraph::new(text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("No search results")
+                    .style(Style::default()),
+            )
+            .style(Style::default());
+
+        frame.render_widget(no_search_box, area);
+    }
+
     /// Scrolls the document up by the specified amount.
     ///
     /// # Arguments
@@ -354,9 +421,10 @@ impl App
     }
 
     /// Toggles the table of contents panel.
-    pub const fn toggle_toc(&mut self)
+    pub fn toggle_toc(&mut self)
     {
-        self.show_toc = !self.show_toc;
+        self.app_state
+            .toggle(AppStateFlags::SHOW_TOC);
     }
 
     /// Enters search mode, clearing any previous search.
@@ -429,14 +497,22 @@ impl App
             }
         }
 
-        // Jump to the first result starting from our location.
-        self.current_search_index = self
-            .search_results
-            // First position where line_num >= self.current_scroll_pos
-            .partition_point(|&line_num: &LineNumber| line_num < self.current_scroll_pos);
-
-        if !self.search_results.is_empty()
+        if self.search_results.is_empty()
         {
+            self.app_state
+                .insert(AppStateFlags::HAS_NO_RESULTS);
+        }
+        // Jump to the first result starting from our location.
+        else
+        {
+            self.app_state
+                .remove(AppStateFlags::HAS_NO_RESULTS);
+
+            self.current_search_index = self
+                .search_results
+                // First position where line_num >= self.current_scroll_pos
+                .partition_point(|&line_num: &LineNumber| line_num < self.current_scroll_pos);
+
             self.jump_to_search_result();
         }
     }
@@ -489,6 +565,8 @@ impl App
         self.search_results.clear();
         self.search_matches.clear();
         self.current_search_index = 0;
+        self.app_state
+            .remove(AppStateFlags::HAS_NO_RESULTS);
     }
 
     /// Jumps to the current `ToC` entry by scrolling to its line.
@@ -512,8 +590,7 @@ impl Default for App
             rfc_line_number: 0,
             current_scroll_pos: 0,
             mode: AppMode::Normal,
-            should_run: true,
-            show_toc: false,
+            app_state: AppStateFlags::default(),
             search_text: String::with_capacity(20),
             search_results: Vec::with_capacity(50),
             current_search_index: 0,

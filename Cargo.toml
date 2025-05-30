@@ -24,6 +24,7 @@ license-file = "LICENSE"
 
 [dependencies]
 anyhow = "1.0.98"
+bitflags = "2.9.1"
 clap = "4.5.37"
 crossterm = "0.29.0"
 directories = "6.0.0"
