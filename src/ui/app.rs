@@ -91,11 +91,11 @@ pub struct App
 
     // Search
     /// Current search query text
-    pub search_text: String,
+    pub query_text: String,
     /// Line numbers where search results were found
-    pub search_results: Vec<LineNumber>,
+    pub search_match_line_nums: Vec<LineNumber>,
     /// Index of the currently selected search result
-    pub current_search_index: LineNumber,
+    pub current_match_line_index: LineNumber,
     /// Map of line numbers to their matching spans.
     pub search_matches: HashMap<LineNumber, Vec<Range<usize>>>,
 }
@@ -130,7 +130,7 @@ impl App
     /// Builds the RFC text, highlighted if searching.
     fn build_text(&self) -> Text<'_>
     {
-        if self.mode == AppMode::Search || !self.search_text.is_empty()
+        if self.mode == AppMode::Search || !self.query_text.is_empty()
         {
             let lines: Vec<Line> = self
                 .rfc_content
@@ -345,7 +345,7 @@ impl App
         // Clear the area first to make it fully opaque
         frame.render_widget(Clear, area);
 
-        let text = Text::from(format!("/{}", self.search_text));
+        let text = Text::from(format!("/{}", self.query_text));
 
         let search_box = Paragraph::new(text)
             .block(
@@ -433,7 +433,7 @@ impl App
     pub fn enter_search_mode(&mut self)
     {
         self.mode = AppMode::Search;
-        self.search_text.clear();
+        self.query_text.clear();
     }
 
     /// Exits search mode and returns to normal mode.
@@ -449,13 +449,13 @@ impl App
     /// * `ch` - The character to add
     pub fn add_search_char(&mut self, ch: char)
     {
-        self.search_text.push(ch);
+        self.query_text.push(ch);
     }
 
     /// Removes the last character from the search text.
     pub fn remove_search_char(&mut self)
     {
-        self.search_text.pop();
+        self.query_text.pop();
     }
 
     /// Performs a search using the current search text.
@@ -465,15 +465,15 @@ impl App
     /// first result.
     pub fn perform_search(&mut self)
     {
-        self.search_results.clear();
+        self.search_match_line_nums.clear();
         self.search_matches.clear();
 
-        if self.search_text.is_empty()
+        if self.query_text.is_empty()
         {
             return;
         }
 
-        let pattern = regex::escape(&self.search_text);
+        let pattern = regex::escape(&self.query_text);
         let Ok(regex) = Regex::new(&format!("(?i){pattern}"))
         else
         {
@@ -493,13 +493,13 @@ impl App
             if !matches_in_line.is_empty()
             {
                 // Add the line number and matches to the search results.
-                self.search_results.push(line_num);
+                self.search_match_line_nums.push(line_num);
                 self.search_matches
                     .insert(line_num, matches_in_line);
             }
         }
 
-        if self.search_results.is_empty()
+        if self.search_match_line_nums.is_empty()
         {
             self.app_state
                 .insert(AppStateFlags::HAS_NO_RESULTS);
@@ -510,8 +510,8 @@ impl App
             self.app_state
                 .remove(AppStateFlags::HAS_NO_RESULTS);
 
-            self.current_search_index = self
-                .search_results
+            self.current_match_line_index = self
+                .search_match_line_nums
                 // First position where line_num >= self.current_scroll_pos
                 .partition_point(|&line_num: &LineNumber| line_num < self.current_scroll_pos);
 
@@ -522,14 +522,14 @@ impl App
     /// Moves to the next search result.
     pub fn next_search_result(&mut self)
     {
-        if self.search_results.is_empty()
+        if self.search_match_line_nums.is_empty()
         {
             return;
         }
 
-        if self.current_search_index < self.search_results.len() - 1
+        if self.current_match_line_index < self.search_match_line_nums.len() - 1
         {
-            self.current_search_index += 1;
+            self.current_match_line_index += 1;
             self.jump_to_search_result();
         }
     }
@@ -537,14 +537,14 @@ impl App
     /// Moves to the previous search result.
     pub fn prev_search_result(&mut self)
     {
-        if self.search_results.is_empty()
+        if self.search_match_line_nums.is_empty()
         {
             return;
         }
 
-        if self.current_search_index > 0
+        if self.current_match_line_index > 0
         {
-            self.current_search_index -= 1;
+            self.current_match_line_index -= 1;
             self.jump_to_search_result();
         }
     }
@@ -553,8 +553,8 @@ impl App
     fn jump_to_search_result(&mut self)
     {
         if let Some(line_num) = self
-            .search_results
-            .get(self.current_search_index)
+            .search_match_line_nums
+            .get(self.current_match_line_index)
         {
             self.current_scroll_pos = *line_num;
         }
@@ -563,10 +563,10 @@ impl App
     /// Resets the search highlights.
     pub fn reset_search_highlights(&mut self)
     {
-        self.search_text.clear();
-        self.search_results.clear();
+        self.query_text.clear();
+        self.search_match_line_nums.clear();
         self.search_matches.clear();
-        self.current_search_index = 0;
+        self.current_match_line_index = 0;
         self.app_state
             .remove(AppStateFlags::HAS_NO_RESULTS);
     }
@@ -593,9 +593,9 @@ impl Default for App
             current_scroll_pos: 0,
             mode: AppMode::Normal,
             app_state: AppStateFlags::default(),
-            search_text: String::with_capacity(20),
-            search_results: Vec::with_capacity(50),
-            current_search_index: 0,
+            query_text: String::with_capacity(20),
+            search_match_line_nums: Vec::with_capacity(50),
+            current_match_line_index: 0,
             search_matches: HashMap::with_capacity(50),
         }
     }
