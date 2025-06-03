@@ -20,7 +20,8 @@ use super::toc_panel::TocPanel;
 use std::collections::HashMap;
 use std::ops::Range;
 
-const HIGHLIGHT_STYLE: Style = Style::new()
+/// Style for highlighting matches in the search results.
+const MATCH_HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::Yellow)
     .add_modifier(Modifier::BOLD);
 
@@ -63,6 +64,9 @@ impl Default for AppStateFlags
 /// Type alias for line numbers.
 pub(super) type LineNumber = usize;
 
+/// Type alias for match spans of a line.
+type MatchSpan = Range<usize>;
+
 /// Main application state for the RFC reader.
 ///
 /// Handles the display and interaction with RFC documents including
@@ -97,7 +101,7 @@ pub struct App
     /// Index of the currently selected query match.
     pub current_query_match_index: LineNumber,
     /// Line numbers and their positions of query matches.
-    pub query_matches: HashMap<LineNumber, Vec<Range<usize>>>,
+    pub query_matches: HashMap<LineNumber, Vec<MatchSpan>>,
 }
 
 impl App
@@ -138,22 +142,24 @@ impl App
                 .enumerate()
                 .map(|(line_num, line_str)| {
                     // Highlight spans that match in the current line.
+                    // Matches are already sorted by start position.
                     if let Some(matches) = self.query_matches.get(&line_num)
                     {
                         let mut spans = Vec::new();
                         let mut last_end = 0;
-                        let mut sorted_matches = matches.clone();
-                        sorted_matches.sort_by_key(|range| range.start);
 
-                        for range in sorted_matches
+                        for match_span in matches
                         {
-                            if range.start > last_end
+                            if match_span.start > last_end
                             {
-                                spans.push(Span::raw(&line_str[last_end..range.start]));
+                                spans.push(Span::raw(&line_str[last_end..match_span.start]));
                             }
-                            last_end = range.end;
+                            last_end = match_span.end;
 
-                            spans.push(Span::styled(&line_str[range], HIGHLIGHT_STYLE));
+                            spans.push(Span::styled(
+                                &line_str[match_span.clone()],
+                                MATCH_HIGHLIGHT_STYLE,
+                            ));
                         }
                         if last_end < line_str.len()
                         {
@@ -483,7 +489,7 @@ impl App
         // Search line by line.
         for (line_num, line) in self.rfc_content.lines().enumerate()
         {
-            let mut matches_in_line = Vec::new();
+            let mut matches_in_line: Vec<MatchSpan> = Vec::new();
             for r#match in regex.find_iter(line)
             {
                 // Add the range of the match.
@@ -494,6 +500,11 @@ impl App
             {
                 // Add the line number and matches to the search results.
                 self.query_match_line_nums.push(line_num);
+
+                // Sort the match ranges by start position to allow
+                // consistent iteration order.
+                matches_in_line.sort_unstable_by_key(|span: &MatchSpan| span.start);
+
                 self.query_matches
                     .insert(line_num, matches_in_line);
             }
