@@ -90,14 +90,14 @@ pub struct App
     pub app_state: AppStateFlags,
 
     // Search
-    /// Current search query text
+    /// Text of the query to search.
     pub query_text: String,
-    /// Line numbers where search results were found
-    pub search_match_line_nums: Vec<LineNumber>,
-    /// Index of the currently selected search result
-    pub current_match_line_index: LineNumber,
-    /// Map of line numbers to their matching spans.
-    pub search_matches: HashMap<LineNumber, Vec<Range<usize>>>,
+    /// Line numbers where query matches were found.
+    pub query_match_line_nums: Vec<LineNumber>,
+    /// Index of the currently selected query match.
+    pub current_query_match_index: LineNumber,
+    /// Line numbers and their positions of query matches.
+    pub query_matches: HashMap<LineNumber, Vec<Range<usize>>>,
 }
 
 impl App
@@ -138,7 +138,7 @@ impl App
                 .enumerate()
                 .map(|(line_num, line_str)| {
                     // Highlight spans that match in the current line.
-                    if let Some(matches) = self.search_matches.get(&line_num)
+                    if let Some(matches) = self.query_matches.get(&line_num)
                     {
                         let mut spans = Vec::new();
                         let mut last_end = 0;
@@ -465,8 +465,8 @@ impl App
     /// first result.
     pub fn perform_search(&mut self)
     {
-        self.search_match_line_nums.clear();
-        self.search_matches.clear();
+        self.query_match_line_nums.clear();
+        self.query_matches.clear();
 
         if self.query_text.is_empty()
         {
@@ -493,13 +493,13 @@ impl App
             if !matches_in_line.is_empty()
             {
                 // Add the line number and matches to the search results.
-                self.search_match_line_nums.push(line_num);
-                self.search_matches
+                self.query_match_line_nums.push(line_num);
+                self.query_matches
                     .insert(line_num, matches_in_line);
             }
         }
 
-        if self.search_match_line_nums.is_empty()
+        if self.query_match_line_nums.is_empty()
         {
             self.app_state
                 .insert(AppStateFlags::HAS_NO_RESULTS);
@@ -510,8 +510,8 @@ impl App
             self.app_state
                 .remove(AppStateFlags::HAS_NO_RESULTS);
 
-            self.current_match_line_index = self
-                .search_match_line_nums
+            self.current_query_match_index = self
+                .query_match_line_nums
                 // First position where line_num >= self.current_scroll_pos
                 .partition_point(|&line_num: &LineNumber| line_num < self.current_scroll_pos);
 
@@ -522,14 +522,18 @@ impl App
     /// Moves to the next search result.
     pub fn next_search_result(&mut self)
     {
-        if self.search_match_line_nums.is_empty()
+        if self.query_match_line_nums.is_empty()
         {
             return;
         }
 
-        if self.current_match_line_index < self.search_match_line_nums.len() - 1
+        // Find the first result after the current scroll position
+        if let Some(next_index) = self
+            .query_match_line_nums
+            .iter()
+            .position(|&line_num| line_num > self.current_scroll_pos)
         {
-            self.current_match_line_index += 1;
+            self.current_query_match_index = next_index;
             self.jump_to_search_result();
         }
     }
@@ -537,14 +541,18 @@ impl App
     /// Moves to the previous search result.
     pub fn prev_search_result(&mut self)
     {
-        if self.search_match_line_nums.is_empty()
+        if self.query_match_line_nums.is_empty()
         {
             return;
         }
 
-        if self.current_match_line_index > 0
+        // Find the last result before the current scroll position
+        if let Some(prev_index) = self
+            .query_match_line_nums
+            .iter()
+            .rposition(|&line_num| line_num < self.current_scroll_pos)
         {
-            self.current_match_line_index -= 1;
+            self.current_query_match_index = prev_index;
             self.jump_to_search_result();
         }
     }
@@ -553,8 +561,8 @@ impl App
     fn jump_to_search_result(&mut self)
     {
         if let Some(line_num) = self
-            .search_match_line_nums
-            .get(self.current_match_line_index)
+            .query_match_line_nums
+            .get(self.current_query_match_index)
         {
             self.current_scroll_pos = *line_num;
         }
@@ -564,9 +572,9 @@ impl App
     pub fn reset_search_highlights(&mut self)
     {
         self.query_text.clear();
-        self.search_match_line_nums.clear();
-        self.search_matches.clear();
-        self.current_match_line_index = 0;
+        self.query_match_line_nums.clear();
+        self.query_matches.clear();
+        self.current_query_match_index = 0;
         self.app_state
             .remove(AppStateFlags::HAS_NO_RESULTS);
     }
@@ -594,9 +602,9 @@ impl Default for App
             mode: AppMode::Normal,
             app_state: AppStateFlags::default(),
             query_text: String::with_capacity(20),
-            search_match_line_nums: Vec::with_capacity(50),
-            current_match_line_index: 0,
-            search_matches: HashMap::with_capacity(50),
+            query_match_line_nums: Vec::with_capacity(50),
+            current_query_match_index: 0,
+            query_matches: HashMap::with_capacity(50),
         }
     }
 }
