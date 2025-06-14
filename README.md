@@ -1,14 +1,14 @@
 # RFC Reader
 
-A tool to read RFCs (Request for Comments) with a TUI, allowing you to fetch, cache, and browse RFC documents.
+A tool to read IETF RFCs (Request for Comments) with a TUI, allowing you to fetch, cache, and browse them.
 
 ## Features
 
-- View RFCs directly in your terminal with a clean, navigable interface
-- Automatic caching of RFCs for offline reading
-- Full text search functionality within documents
+- View documents directly in the terminal
+- Automatic caching of the documents for offline reading
+- Text search functionality within document
 - Table of contents navigation
-- Keyboard-driven interface with intuitive controls
+- Keyboard controls
 
 ## Screenshots
 
