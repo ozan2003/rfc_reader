@@ -51,7 +51,6 @@ Refer to the [wiki](https://github.com/ozan2003/rfc_reader/wiki/Keybindings) for
 ## Cache Location
 
 RFCs are cached locally to improve performance and enable offline reading.
-This is done via the `directories` crate.
 
 Linux:
 
@@ -68,7 +67,7 @@ MacOS:
 Windows:
 
 ```bash
-C:\Users\{YOUR_USERNAME}\AppData\Roaming\rfc_reader
+C:\Users\{YOUR_USERNAME}\AppData\Roaming\rfc_reader\config
 ```
 
 ## Contributing
