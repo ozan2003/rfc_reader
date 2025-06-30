@@ -47,12 +47,11 @@ impl Drop for TerminalGuard
 {
     /// Drop the `TerminalGuard`
     ///
-    /// This restores the terminal to a normal state by taking advantage of
-    /// RAII.
+    /// Restores the terminal to a normal state.
     ///
     /// This does the following:
     /// - Exits raw mode
-    /// - Exits alternate screen
+    /// - Switches back to the main screen
     ///
     /// This is performed even if the program panics or returns early
     fn drop(&mut self)

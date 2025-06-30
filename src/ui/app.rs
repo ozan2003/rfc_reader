@@ -15,6 +15,7 @@ use ratatui::{
 };
 use regex::Regex;
 
+use super::guard::TerminalGuard;
 use super::toc_panel::TocPanel;
 
 use std::collections::HashMap;
@@ -92,6 +93,10 @@ pub struct App
     pub mode: AppMode,
     /// Flags for managing the application state.
     pub app_state: AppStateFlags,
+    /// Handle graceful terminal shutdown.
+    // Its purpose is its `Drop` implementation, not direct field access.
+    #[allow(dead_code)]
+    guard: TerminalGuard,
 
     // Search
     /// Text of the query to search.
@@ -604,6 +609,8 @@ impl Default for App
 {
     fn default() -> Self
     {
+        let guard = TerminalGuard::new().expect("Failed to create terminal guard");
+
         Self {
             rfc_content: String::with_capacity(10000),
             rfc_number: 0,
@@ -612,6 +619,7 @@ impl Default for App
             current_scroll_pos: 0,
             mode: AppMode::Normal,
             app_state: AppStateFlags::default(),
+            guard,
             query_text: String::with_capacity(20),
             query_match_line_nums: Vec::with_capacity(50),
             current_query_match_index: 0,

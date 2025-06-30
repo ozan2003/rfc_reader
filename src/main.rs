@@ -6,10 +6,9 @@ use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::{App, AppMode, AppStateFlags, Event, EventHandler, RfcCache, RfcClient};
 use rfc_reader::{LOG_FILE_PATH, clear_log_file, init_logging};
-use rfc_reader::{TerminalGuard, init_panic_hook, init_tui};
+use rfc_reader::{init_panic_hook, init_tui};
 use std::time::Duration;
 
-#[allow(clippy::too_many_lines)]
 fn main() -> Result<()>
 {
     init_panic_hook();
@@ -85,12 +84,6 @@ fn main() -> Result<()>
     // Setup client
     let client = RfcClient::new();
 
-    // Use RAII to ensure terminal cleanup happens
-    let _terminal_guard = TerminalGuard::new()?;
-
-    // Setup terminal - this now returns just the terminal
-    let mut terminal = init_tui()?;
-
     // Get RFC if specified
     let rfc_number = matches
         .get_one::<String>("rfc")
@@ -129,6 +122,9 @@ fn main() -> Result<()>
         debug!("Cached RFC {rfc_number}");
         content
     };
+
+    // Setup terminal
+    let mut terminal = init_tui()?;
 
     // Create app state
     let app = App::new(rfc_number, rfc_content);
