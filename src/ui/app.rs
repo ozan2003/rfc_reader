@@ -1,7 +1,7 @@
-//! Application module for the RFC reader.
+//! Application module for the reader.
 //!
-//! This module provides the main application state and logic for the RFC
-//! reader. It handles the display and interaction with RFC documents including
+//! This module provides the main application state and logic for the
+//! reader. It handles the display and interaction with the documents including
 //! scrolling, searching, and navigation.
 use bitflags::bitflags;
 use ratatui::{
