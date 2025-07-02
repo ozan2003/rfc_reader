@@ -56,10 +56,9 @@ impl Drop for TerminalGuard
     /// This is performed even if the program panics or returns early
     fn drop(&mut self)
     {
-        disable_raw_mode().unwrap();
-        stdout()
-            .execute(LeaveAlternateScreen)
-            .unwrap();
+        // Don't panic during cleanup. Even if these fail, we want to continue
+        let _ = disable_raw_mode();
+        let _ = stdout().execute(LeaveAlternateScreen);
     }
 }
 
