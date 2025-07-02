@@ -52,13 +52,18 @@ impl Drop for TerminalGuard
     /// This does the following:
     /// - Exits raw mode
     /// - Switches back to the main screen
-    ///
-    /// This is performed even if the program panics or returns early
     fn drop(&mut self)
     {
-        // Don't panic during cleanup. Even if these fail, we want to continue
-        let _ = disable_raw_mode();
-        let _ = stdout().execute(LeaveAlternateScreen);
+        // Terminal will be borked when failure, at least inform the user
+        if let Err(err) = disable_raw_mode()
+        {
+            error!("Failed to disable raw mode: {err}");
+        }
+
+        if let Err(err) = stdout().execute(LeaveAlternateScreen)
+        {
+            error!("Failed to leave alternate screen: {err}");
+        }
     }
 }
 
