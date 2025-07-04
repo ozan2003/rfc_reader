@@ -1,10 +1,11 @@
 //! Client module for fetching RFCs from the RFC Editor's website.
 //!
 //! Handles network requests for the RFC reader application.
-use anyhow::{Context, Result};
-use log::debug;
 use std::io::Read;
 use std::time::Duration;
+
+use anyhow::{Context, Result};
+use log::debug;
 use ureq::Agent;
 
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
@@ -75,7 +76,8 @@ impl RfcClient
             .context(format!("Failed to read RFC {rfc_number} content"))?;
 
         Ok(
-            response_body.trim().replace('\x0c', ""), // Remove the unnecesary form feed.
+            // Remove the unnecesary form feed.
+            response_body.trim().replace('\x0c', ""),
         )
     }
 

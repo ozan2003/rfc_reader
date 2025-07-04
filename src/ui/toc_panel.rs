@@ -3,13 +3,11 @@
 //! A panel that displays and manages a table of contents for an RFC document.
 //!
 //! Provides navigation capabilities and tracks the currently selected entry.
-use ratatui::{
-    Frame,
-    layout::{Alignment, Rect},
-    style::{Color, Modifier, Style},
-    text::Line,
-    widgets::{Block, Borders, List, ListItem, ListState},
-};
+use ratatui::Frame;
+use ratatui::layout::{Alignment, Rect};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::Line;
+use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use regex::Regex;
 
 use super::app::LineNumber;
@@ -136,8 +134,10 @@ impl TocPanel
 
 pub mod parsing
 {
+    use std::str::Lines;
+    use std::sync::LazyLock;
+
     use super::{LineNumber, Regex, TocEntry};
-    use std::{str::Lines, sync::LazyLock};
 
     // Static regex patterns for better performance
     //
@@ -165,8 +165,9 @@ pub mod parsing
         ]
     });
 
-    static SECTION_HEADING_REGEX: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"^\d+\.\s+\w+").expect("Invalid section heading regex"));
+    static SECTION_HEADING_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^\d+\.\s+\w+").expect("Invalid section heading regex")
+    });
 
     /// Parses the document by existing `ToC`.
     ///
@@ -214,7 +215,8 @@ pub mod parsing
     ///
     /// The index of the start of the `ToC` section, or `None` if no `ToC` is
     /// found.
-    fn find_toc_start(lines: Lines<'_>, toc_regex: &Regex) -> Option<LineNumber>
+    fn find_toc_start(lines: Lines<'_>, toc_regex: &Regex)
+    -> Option<LineNumber>
     {
         lines.enumerate().find_map(|(index, line)| {
             if toc_regex.is_match(line.trim())
@@ -272,8 +274,12 @@ pub mod parsing
             }
 
             // Try to match and extract entries
-            if let Some(entry) =
-                try_extract_entry(trimmed_line, toc_entry_patterns, lines.clone(), index)
+            if let Some(entry) = try_extract_entry(
+                trimmed_line,
+                toc_entry_patterns,
+                lines.clone(),
+                index,
+            )
             {
                 has_found_entries = true;
                 entries.push(entry);
@@ -312,7 +318,9 @@ pub mod parsing
             .iter()
             .any(|re| re.is_match(trimmed_line));
 
-        if does_look_like_section && !is_matching_toc_pattern && has_found_entries
+        if does_look_like_section &&
+            !is_matching_toc_pattern &&
+            has_found_entries
         {
             return true;
         }
@@ -369,7 +377,8 @@ pub mod parsing
         {
             if let Some(caps) = entry_regex.captures(trimmed_line)
             {
-                // Ensure the regex captures both the section number and the title
+                // Ensure the regex captures both the section number and the
+                // title
                 if caps.len() >= 3
                 {
                     let section_num = caps[1].trim();
@@ -385,7 +394,8 @@ pub mod parsing
                     if let Ok(section_regex) = Regex::new(&section_pattern)
                     {
                         // Look for the section in the document after the ToC
-                        for (line_number, doc_line) in lines.enumerate().skip(index + 1)
+                        for (line_number, doc_line) in
+                            lines.enumerate().skip(index + 1)
                         {
                             if section_regex.is_match(doc_line)
                             {
@@ -432,7 +442,8 @@ pub mod parsing
             let line = line.trim_end();
 
             // Check for section headers in typical RFC format
-            if line.starts_with(|ch: char| ch.is_ascii_digit()) && line.contains('.')
+            if line.starts_with(|ch: char| ch.is_ascii_digit()) &&
+                line.contains('.')
             {
                 let parts: Vec<&str> = line.splitn(2, '.').collect();
                 if parts.len() == 2 && !parts[0].contains(' ')
@@ -444,8 +455,11 @@ pub mod parsing
                     section_pattern = true;
                 }
             }
-            // If we didn't find standard section patterns, look for capitalized headings
-            else if !section_pattern && line.len() > 3 && line == line.to_uppercase()
+            // If we didn't find standard section patterns, look for capitalized
+            // headings
+            else if !section_pattern &&
+                line.len() > 3 &&
+                line == line.to_uppercase()
             {
                 entries.push(TocEntry {
                     title: line.to_string(),
@@ -469,6 +483,7 @@ pub mod parsing
     pub fn parse_toc(content: &str) -> Vec<TocEntry>
     {
         // First, look for existing ToC. Otherwise, use heuristic.
-        parse_toc_existing(content).unwrap_or_else(|| parse_toc_heuristic(content))
+        parse_toc_existing(content)
+            .unwrap_or_else(|| parse_toc_heuristic(content))
     }
 }

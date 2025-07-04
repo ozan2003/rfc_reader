@@ -3,23 +3,22 @@
 //! This module provides the main application state and logic for the
 //! reader. It handles the display and interaction with the documents including
 //! scrolling, searching, and navigation.
+use std::collections::HashMap;
+use std::ops::Range;
+
 use bitflags::bitflags;
-use ratatui::{
-    Frame,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
-    widgets::{
-        Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap,
-    },
+use ratatui::Frame;
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span, Text};
+use ratatui::widgets::{
+    Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation,
+    ScrollbarState, Wrap,
 };
 use regex::Regex;
 
 use super::guard::TerminalGuard;
 use super::toc_panel::TocPanel;
-
-use std::collections::HashMap;
-use std::ops::Range;
 
 /// Style for highlighting matches in the search results.
 const MATCH_HIGHLIGHT_STYLE: Style = Style::new()
@@ -157,7 +156,9 @@ impl App
                         {
                             if match_span.start > last_end
                             {
-                                spans.push(Span::raw(&line_str[last_end..match_span.start]));
+                                spans.push(Span::raw(
+                                    &line_str[last_end..match_span.start],
+                                ));
                             }
                             last_end = match_span.end;
 
@@ -213,7 +214,10 @@ impl App
             // Create layout with ToC panel on the left
             Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
+                .constraints(
+                    [Constraint::Percentage(25), Constraint::Percentage(75)]
+                        .as_ref(),
+                )
                 .split(size)
         }
         else
@@ -247,8 +251,8 @@ impl App
             chunks[0]
         };
 
-        // Render the text with highlights if in search mode or if there is a search
-        // text
+        // Render the text with highlights if in search mode or if there is a
+        // search text
         let text = self.build_text();
         let title = format!("RFC {} - Press ? for help", self.rfc_number);
 
@@ -265,12 +269,16 @@ impl App
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
 
-        let mut scrollbar_state =
-            ScrollbarState::new(self.rfc_line_number).position(self.current_scroll_pos);
+        let mut scrollbar_state = ScrollbarState::new(self.rfc_line_number)
+            .position(self.current_scroll_pos);
 
         // Rendering the paragraph and the scrollbar happens here.
         frame.render_widget(paragraph, content_area);
-        frame.render_stateful_widget(scrollbar, content_area, &mut scrollbar_state);
+        frame.render_stateful_widget(
+            scrollbar,
+            content_area,
+            &mut scrollbar_state,
+        );
 
         // Render help if in help mode
         if self.mode == AppMode::Help
@@ -417,7 +425,8 @@ impl App
     {
         let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
         // Clamp the scroll position to the last line.
-        self.current_scroll_pos = (self.current_scroll_pos + amount).min(last_line_pos);
+        self.current_scroll_pos =
+            (self.current_scroll_pos + amount).min(last_line_pos);
     }
 
     /// Toggles the help overlay.
@@ -508,7 +517,8 @@ impl App
 
                 // Sort the match ranges by start position to allow
                 // consistent iteration order.
-                matches_in_line.sort_unstable_by_key(|span: &MatchSpan| span.start);
+                matches_in_line
+                    .sort_unstable_by_key(|span: &MatchSpan| span.start);
 
                 self.query_matches
                     .insert(line_num, matches_in_line);
@@ -529,7 +539,9 @@ impl App
             self.current_query_match_index = self
                 .query_match_line_nums
                 // First position where line_num >= self.current_scroll_pos
-                .partition_point(|&line_num: &LineNumber| line_num < self.current_scroll_pos);
+                .partition_point(|&line_num: &LineNumber| {
+                    line_num < self.current_scroll_pos
+                });
 
             self.jump_to_search_result();
         }
@@ -609,7 +621,8 @@ impl Default for App
 {
     fn default() -> Self
     {
-        let guard = TerminalGuard::new().expect("Failed to create terminal guard");
+        let guard =
+            TerminalGuard::new().expect("Failed to create terminal guard");
 
         Self {
             rfc_content: String::with_capacity(10000),

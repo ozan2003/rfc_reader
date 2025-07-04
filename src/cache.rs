@@ -1,12 +1,13 @@
 //! Cache module for storing RFC documents locally.
 //!
-//! Provides functionality to read and write RFCs to disk,
-//! reducing the need for repeated network requests.
-use anyhow::{Context, Result};
-use directories::ProjectDirs;
+//! Responsible for handling local storage of RFC documents to minimize
+//! redundant network requests by caching content on disk.
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
+
+use anyhow::{Context, Result};
+use directories::ProjectDirs;
 
 /// Cache for storing RFC documents locally.
 ///
@@ -39,7 +40,8 @@ impl RfcCache
 
         let cache_dir = project_dirs.cache_dir().to_path_buf();
         // Create if cache_dir doesn't exist.
-        fs::create_dir_all(&cache_dir).context("Failed to create cache directory")?;
+        fs::create_dir_all(&cache_dir)
+            .context("Failed to create cache directory")?;
 
         Ok(Self { cache_dir })
     }
@@ -85,8 +87,9 @@ impl RfcCache
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
-        let mut file = File::create(&rfc_path)
-            .context(format!("Failed to create cache file for RFC {rfc_number}"))?;
+        let mut file = File::create(&rfc_path).context(format!(
+            "Failed to create cache file for RFC {rfc_number}"
+        ))?;
 
         // Write the contents.
         file.write_all(content.as_bytes())
@@ -133,7 +136,8 @@ impl RfcCache
     {
         let path = self.get_index_cache_path();
 
-        let mut file = File::create(&path).context("Failed to create cache file for RFC index")?;
+        let mut file = File::create(&path)
+            .context("Failed to create cache file for RFC index")?;
 
         file.write_all(content.as_bytes())
             .context("Failed to write RFC index to cache")?;
@@ -178,7 +182,8 @@ impl RfcCache
     pub fn clear(&self) -> Result<()>
     {
         // Read the directory entries
-        let entries = fs::read_dir(&self.cache_dir).context("Failed to read cache directory")?;
+        let entries = fs::read_dir(&self.cache_dir)
+            .context("Failed to read cache directory")?;
 
         // Remove each file or directory in the cache directory
         for entry in entries.filter_map(Result::ok)
@@ -187,8 +192,10 @@ impl RfcCache
 
             if path.is_file()
             {
-                fs::remove_file(&path)
-                    .context(format!("Failed to remove cache file: {}", path.display()))?;
+                fs::remove_file(&path).context(format!(
+                    "Failed to remove cache file: {}",
+                    path.display()
+                ))?;
             }
             else if path.is_dir()
             {
@@ -209,7 +216,8 @@ impl RfcCache
 
         if is_empty
         {
-            fs::remove_dir(&self.cache_dir).context("Failed to remove empty cache directory")?;
+            fs::remove_dir(&self.cache_dir)
+                .context("Failed to remove empty cache directory")?;
         }
 
         Ok(())
@@ -275,10 +283,12 @@ impl RfcCache
 #[cfg(test)]
 mod tests
 {
-    use super::*;
     use std::fs::File;
     use std::io::Write;
+
     use tempfile::TempDir;
+
+    use super::*;
 
     #[test]
     fn test_clear_with_files() -> Result<()>
@@ -319,7 +329,8 @@ mod tests
         // Verify the directory has been removed since it should be empty
         assert!(!cache_dir.exists());
 
-        // The temp_dir will be automatically cleaned up when it goes out of scope
+        // The temp_dir will be automatically cleaned up when it goes out of
+        // scope
         Ok(())
     }
 

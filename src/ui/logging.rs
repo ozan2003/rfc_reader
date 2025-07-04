@@ -3,13 +3,15 @@
 //! This module provides functionality to initialize logging for the
 //! application.
 
-use anyhow::Result;
-use directories::BaseDirs;
-use env_logger::{Builder, Target, fmt::TimestampPrecision};
-use log::LevelFilter;
 use std::fs::{File, create_dir_all, remove_file};
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
+
+use anyhow::Result;
+use directories::BaseDirs;
+use env_logger::fmt::TimestampPrecision;
+use env_logger::{Builder, Target};
+use log::LevelFilter;
 
 // Static log file path that can be accessed from other modules.
 pub static LOG_FILE_PATH: LazyLock<Mutex<PathBuf>> = LazyLock::new(|| {

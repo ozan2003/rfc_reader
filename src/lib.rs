@@ -15,12 +15,8 @@
 //! - `client`: HTTP client for fetching RFCs from remote sources
 //! - `cache`: Local storage for RFCs to improve performance
 //! - `ui`: Terminal user interface components and event handling
-mod cache;
-mod client;
-mod ui;
+pub mod cache;
+pub mod client;
+pub mod ui;
 
-pub use cache::RfcCache;
-pub use client::RfcClient;
-pub use ui::logging::{LOG_FILE_PATH, clear_log_file, init_logging};
-pub use ui::{App, AppMode, AppStateFlags, Event, EventHandler};
-pub use ui::{TerminalGuard, init_panic_hook, init_tui};
+pub use ui::logging;

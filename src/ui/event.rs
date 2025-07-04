@@ -31,7 +31,8 @@ pub enum Event
 /// a way to receive events through a channel.
 pub struct EventHandler
 {
-    /// Receiver side of the event channel to get events from the handler thread
+    /// Receiver side of the event channel to get events from the handler
+    /// thread
     event_receiver: mpsc::Receiver<Event>,
     /// Sender for shutdown the thread for graceful shutdown
     // The receiver is moved to the thread
@@ -61,7 +62,8 @@ impl EventHandler
     #[must_use]
     pub fn new(tick_rate: Duration) -> Self
     {
-        // Create a channel for sending events from the thread to the main application
+        // Create a channel for sending events from the thread to the main
+        // application
         let (event_sender, event_receiver) = mpsc::channel();
         let (shutdown_sender, shutdown_receiver) = mpsc::channel();
 
@@ -82,7 +84,8 @@ impl EventHandler
                 // If more time than tick_rate has passed, don't wait at all
                 let timeout = tick_rate.saturating_sub(last_tick.elapsed());
 
-                // Poll for crossterm events, with timeout to ensure we generate tick events
+                // Poll for crossterm events, with timeout to ensure we generate
+                // tick events
                 if event::poll(timeout).expect("Error polling events")
                 {
                     match event::read().expect("Error reading event")
@@ -90,12 +93,13 @@ impl EventHandler
                         // Handle keyboard input
                         CrosstermEvent::Key(key) =>
                         {
-                            // Break the loop if sending fails (receiver dropped)
+                            // Break the loop if sending fails (receiver
+                            // dropped)
                             if event_sender.send(Event::Key(key)).is_err()
                             {
                                 break;
                             }
-                        }
+                        },
                         // Handle terminal resize events
                         CrosstermEvent::Resize(width, height) =>
                         {
@@ -105,10 +109,10 @@ impl EventHandler
                             {
                                 break;
                             }
-                        }
+                        },
                         // Ignore other event types
                         _ =>
-                        {}
+                        {},
                     }
                 }
 

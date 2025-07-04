@@ -2,15 +2,20 @@
 //!
 //! Ensures the terminal is properly initialized for the application and
 //! restored to its original state when the program exits.
+//!
+//! It also sets up a panic hook to handle panics gracefully and the terminal
+//! backend for the terminal UI.
+use std::io::{Result as IoResult, stdout};
+use std::panic::{set_hook, take_hook};
+
 use crossterm::ExecutableCommand;
 use crossterm::terminal::{
-    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
+    enable_raw_mode,
 };
 use log::error;
 use ratatui::Terminal;
 use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
-use std::io::{Result as IoResult, stdout};
-use std::panic::{set_hook, take_hook};
 
 /// Manage terminal state with RAII
 ///
