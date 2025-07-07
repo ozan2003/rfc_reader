@@ -8,7 +8,7 @@ use std::ops::Range;
 
 use bitflags::bitflags;
 use ratatui::Frame;
-use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::layout::{Alignment, Constraint, Direction, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
@@ -204,51 +204,29 @@ impl App
         // Clear the entire frame on each render to prevent artifacts
         frame.render_widget(Clear, frame.area());
 
-        // Normal mode layout
-        let size = frame.area();
-
-        let chunks = if self
-            .app_state
-            .contains(AppStateFlags::SHOW_TOC)
-        {
-            // Create layout with ToC panel on the left
-            Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints(
-                    [Constraint::Percentage(25), Constraint::Percentage(75)]
-                        .as_ref(),
-                )
-                .split(size)
-        }
-        else
-        {
-            // Full-width layout for content only
-            Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(100)].as_ref())
-                .split(size)
-        };
-
-        // If ToC is shown, render it on the left side (chunks[0])
-        if self
-            .app_state
-            .contains(AppStateFlags::SHOW_TOC)
-        {
-            self.rfc_toc_panel.render(frame, chunks[0]);
-        }
-
-        // Render the main content area on the right side (chunks[1])
-        // chunks[0] is the ToC if it is shown
-        // chunks[1] is the content if ToC is not shown
         let content_area = if self
             .app_state
             .contains(AppStateFlags::SHOW_TOC)
         {
-            chunks[1]
+            // Create layout with ToC panel on the left
+            let [toc_area, content_area] = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(75),
+                ])
+                .areas(frame.area());
+
+            // Render ToC in the left area
+            self.rfc_toc_panel.render(frame, toc_area);
+
+            // Return the content area
+            content_area
         }
         else
         {
-            chunks[0]
+            // Full-width layout for content only
+            frame.area()
         };
 
         // Render the text with highlights if in search mode or if there is a
@@ -309,7 +287,11 @@ impl App
     fn render_help(frame: &mut Frame)
     {
         // Create a centered rectangle.
-        let area = centered_rect(60, 60, frame.area());
+        let area = centered_rect(
+            frame.area(),
+            Constraint::Percentage(60),
+            Constraint::Percentage(60),
+        );
 
         // Clear the area first to make it fully opaque
         frame.render_widget(Clear, area);
@@ -385,7 +367,11 @@ impl App
     /// * `frame` - The frame to render the no search results message to
     fn render_no_search_results(frame: &mut Frame)
     {
-        let area = centered_rect(40, 25, frame.area());
+        let area = centered_rect(
+            frame.area(),
+            Constraint::Percentage(40),
+            Constraint::Percentage(25),
+        );
 
         frame.render_widget(Clear, area);
 
@@ -645,30 +631,24 @@ impl Default for App
 ///
 /// # Arguments
 ///
-/// * `percent_x` - Width of the rectangle as a percentage of the parent area
-/// * `percent_y` - Height of the rectangle as a percentage of the parent area
-/// * `r` - Parent rectangle
+/// * `area` - The parent area
+/// * `horizontal` - The horizontal constraint
+/// * `vertical` - The vertical constraint
 ///
 /// # Returns
 ///
 /// A new rectangle positioned in the center of the parent
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect
+fn centered_rect(
+    area: Rect,
+    horizontal: Constraint,
+    vertical: Constraint,
+) -> Rect
 {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2),
-            Constraint::Percentage(percent_y),
-            Constraint::Percentage((100 - percent_y) / 2),
-        ])
-        .split(r);
-
-    Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2),
-            Constraint::Percentage(percent_x),
-            Constraint::Percentage((100 - percent_x) / 2),
-        ])
-        .split(popup_layout[1])[1]
+    let [area] = Layout::horizontal([horizontal])
+        .flex(Flex::Center)
+        .areas(area);
+    let [area] = Layout::vertical([vertical])
+        .flex(Flex::Center)
+        .areas(area);
+    area
 }
