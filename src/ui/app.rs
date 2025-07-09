@@ -295,11 +295,12 @@ impl App
             .constraints([
                 Constraint::Length(25), // Left: RFC info
                 Constraint::Min(0),     // Middle: Mode and progress (flexible)
+                // Max right text length is 41 so i adjusted for that.
                 Constraint::Length(41), // Right: Help text
             ])
             .areas(area);
 
-        // Left section: RFC number and mode
+        // ------------------Left section: RFC number and mode------------------
         let mode_text = match self.mode
         {
             AppMode::Normal
@@ -318,7 +319,7 @@ impl App
         let left_statusbar = Paragraph::new(left_text).style(STATUSBAR_STYLE);
         frame.render_widget(left_statusbar, left_section);
 
-        // Middle section: Line position and search info
+        // ------------Middle section: Line position and search info------------
         let progress_percentage = if self.rfc_line_number > 0
         {
             self.current_scroll_pos * 100 / self.rfc_line_number
@@ -361,7 +362,7 @@ impl App
             .alignment(Alignment::Center);
         frame.render_widget(middle_statusbar, middle_section);
 
-        // Right section: Help text
+        // ----------------------Right section: Help text----------------------
         // Show basic controls based on the current mode.
         let right_text = match self.mode
         {
@@ -408,10 +409,10 @@ impl App
         // Clear the area first to make it fully opaque
         frame.render_widget(Clear, area);
 
-        // Vim-like controls
         let text = Text::from(vec![
             Line::from("Keybindings:"),
             Line::from(""),
+            // Vim-like navigation
             Line::from("j/k or ↓/↑: Scroll down/up"),
             Line::from("f/b or PgDn/PgUp: Scroll page down/up"),
             Line::from("g/G: Go to start/end of document"),

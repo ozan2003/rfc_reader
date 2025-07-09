@@ -12,11 +12,11 @@ A tool to read IETF RFCs (Request for Comments) with a TUI, allowing you to fetc
 
 ## Screenshots
 
-[![rfc-reader.png](https://i.postimg.cc/7Lx5RrDz/rfc-reader.png)](https://postimg.cc/fVrW3FVW)
+[![rfc-reader-normal.png](https://i.postimg.cc/gJjvpMnQ/rfc-reader-normal.png)](https://postimg.cc/zbmLSFwF)
 
-[![rfc-reader-toc.png](https://i.postimg.cc/xdtXDpT4/rfc-reader-toc.png)](https://postimg.cc/CZnhbN8G)
+[![rfc-reader-toc.png](https://i.postimg.cc/GpcF73rc/rfc-reader-toc.png)](https://postimg.cc/Js2HtLGg)
 
-[![rfc-reader-search.png](https://i.postimg.cc/4xvKwxCZ/rfc-reader-search.png)](https://postimg.cc/XrJ7Y37D)
+[![rfc-reader-search.png](https://i.postimg.cc/6QYdDs5C/rfc-reader-search.png)](https://postimg.cc/v1xgVNnm)
 
 ## Usage
 
