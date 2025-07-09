@@ -70,6 +70,16 @@ impl TocPanel
         Self { entries, state }
     }
 
+    /// Returns a reference to the `ToC` entries.
+    ///
+    /// # Returns
+    ///
+    /// A slice of all `ToC` entries
+    pub fn entries(&self) -> &[TocEntry]
+    {
+        &self.entries
+    }
+
     /// Renders the table of contents panel to the specified area.
     ///
     /// # Arguments
@@ -162,13 +172,15 @@ pub mod parsing
         Regex::new(&pattern).expect("Invalid TOC header regex")
     });
 
+    // Acknowledgements, authors' addresses, etc. aren't included.
     static TOC_ENTRY_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
+        // Account for the leading whitespace in the entries
         vec![
             // Standard format with dots: "1. Introduction..................5"
-            Regex::new(r"^(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
+            Regex::new(r"^\s*(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
                 .expect("Invalid TOC entry regex"),
-            // Appendix format: "Appendix A. Example"
-            Regex::new(r"^Appendix\s+([A-Z])\.?\s+(.*?)(?:\.{2,}\s*\d+)?$")
+            // Appendix format: "   Appendix A. Example"
+            Regex::new(r"^\s*(Appendix\s+[A-Z]\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
                 .expect("Invalid appendix regex"),
         ]
     });
@@ -192,15 +204,10 @@ pub mod parsing
         let lines = content.lines();
 
         // Find ToC start
-        let start_index = find_toc_start(lines.clone(), &TOC_HEADER_REGEX)?;
+        let start_index = find_toc_start(lines.clone())?;
 
         // Process ToC entries
-        let entries = extract_toc_entries(
-            &lines,
-            start_index,
-            &TOC_ENTRY_PATTERNS,
-            &SECTION_HEADING_REGEX,
-        );
+        let entries = extract_toc_entries(&lines, start_index);
 
         if entries.is_empty()
         {
@@ -223,11 +230,10 @@ pub mod parsing
     ///
     /// The index of the start of the `ToC` section, or `None` if no `ToC` is
     /// found.
-    fn find_toc_start(lines: Lines<'_>, toc_regex: &Regex)
-    -> Option<LineNumber>
+    fn find_toc_start(lines: Lines<'_>) -> Option<LineNumber>
     {
         lines.enumerate().find_map(|(index, line)| {
-            if toc_regex.is_match(line.trim())
+            if TOC_HEADER_REGEX.is_match(line.trim())
             {
                 Some(index + 1) // Skip the `ToC` header line
             }
@@ -244,8 +250,6 @@ pub mod parsing
     ///
     /// * `lines` - The lines of the document
     /// * `start_index` - The index of the start of the `ToC` section
-    /// * `toc_entry_patterns` - The regex patterns to find `ToC` entries
-    /// * `section_heading` - The regex to find section headings
     ///
     /// # Returns
     ///
@@ -253,8 +257,6 @@ pub mod parsing
     fn extract_toc_entries(
         lines: &Lines<'_>,
         start_index: LineNumber,
-        toc_entry_patterns: &[Regex],
-        section_heading: &Regex,
     ) -> Vec<TocEntry>
     {
         let mut entries = Vec::new();
@@ -271,8 +273,6 @@ pub mod parsing
             // Check stopping conditions
             if should_stop_parsing(
                 trimmed_line,
-                section_heading,
-                toc_entry_patterns,
                 has_found_entries,
                 &mut consecutive_empty_lines,
                 &mut lines_without_entries,
@@ -282,12 +282,8 @@ pub mod parsing
             }
 
             // Try to match and extract entries
-            if let Some(entry) = try_extract_entry(
-                trimmed_line,
-                toc_entry_patterns,
-                lines.clone(),
-                index,
-            )
+            if let Some(entry) =
+                try_extract_entry(trimmed_line, lines.clone(), index)
             {
                 has_found_entries = true;
                 entries.push(entry);
@@ -302,8 +298,6 @@ pub mod parsing
     /// # Arguments
     ///
     /// * `trimmed_line` - The trimmed line to check
-    /// * `section_heading` - The regex to find section headings
-    /// * `toc_entry_patterns` - The regex patterns to find `ToC` entries
     /// * `has_found_entries` - Whether we have found any entries
     /// * `consecutive_empty_lines` - The number of consecutive empty lines
     /// * `lines_without_entries` - The number of lines without entries
@@ -313,16 +307,15 @@ pub mod parsing
     /// A boolean indicating whether we should stop parsing the `ToC`
     fn should_stop_parsing(
         trimmed_line: &str,
-        section_heading: &Regex,
-        toc_entry_patterns: &[Regex],
         has_found_entries: bool,
         consecutive_empty_lines: &mut u8,
         lines_without_entries: &mut u8,
     ) -> bool
     {
         // 1. Check for section headings outside ToC
-        let does_look_like_section = section_heading.is_match(trimmed_line);
-        let is_matching_toc_pattern = toc_entry_patterns
+        let does_look_like_section =
+            SECTION_HEADING_REGEX.is_match(trimmed_line);
+        let is_matching_toc_pattern = TOC_ENTRY_PATTERNS
             .iter()
             .any(|re| re.is_match(trimmed_line));
 
@@ -334,11 +327,10 @@ pub mod parsing
         }
 
         // 2. Check empty lines
-        // Multiple consecutive empty lines indicate the end of the ToC
         if trimmed_line.is_empty()
         {
             *consecutive_empty_lines += 1;
-            if *consecutive_empty_lines >= 2 && has_found_entries
+            if *consecutive_empty_lines >= 5 && has_found_entries
             {
                 return true;
             }
@@ -349,10 +341,15 @@ pub mod parsing
         }
 
         // 3. Check timeout for entries
-        if !has_found_entries
+        if has_found_entries
+        {
+            // Reset counter when we have found entries
+            *lines_without_entries = 0;
+        }
+        else
         {
             *lines_without_entries += 1;
-            if *lines_without_entries > 20
+            if *lines_without_entries > 30
             {
                 return true;
             }
@@ -366,7 +363,6 @@ pub mod parsing
     /// # Arguments
     ///
     /// * `trimmed_line` - The trimmed line to check
-    /// * `toc_entry_patterns` - The regex patterns to find `ToC` entries
     /// * `lines` - The lines of the document
     /// * `index` - The index of the line
     ///
@@ -376,12 +372,11 @@ pub mod parsing
     /// entry is found.
     fn try_extract_entry(
         trimmed_line: &str,
-        toc_entry_patterns: &[Regex],
         lines: Lines<'_>,
         index: LineNumber,
     ) -> Option<TocEntry>
     {
-        for entry_regex in toc_entry_patterns
+        for entry_regex in TOC_ENTRY_PATTERNS.iter()
         {
             if let Some(caps) = entry_regex.captures(trimmed_line)
             {

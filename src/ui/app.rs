@@ -3,7 +3,7 @@
 //! This module provides the main application state and logic for the
 //! reader. It handles the display and interaction with the documents including
 //! scrolling, searching, and navigation.
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::stdout;
 use std::ops::Range;
 
@@ -25,6 +25,12 @@ const MATCH_HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::Yellow)
     .add_modifier(Modifier::BOLD);
 
+/// Style for highlighting titles in the document.
+const TITLE_HIGHLIGHT_STYLE: Style = Style::new()
+    .fg(Color::Cyan)
+    .add_modifier(Modifier::BOLD);
+
+/// Style for the statusbar.
 const STATUSBAR_STYLE: Style = Style::new()
     .bg(Color::White)
     .fg(Color::Black);
@@ -143,59 +149,127 @@ impl App
         }
     }
 
-    /// Builds the RFC text, highlighted if searching.
+    /// Builds the RFC text with highlighting for search matches and titles.
     fn build_text(&self) -> Text<'_>
     {
-        if self.mode == AppMode::Search || !self.query_text.is_empty()
-        {
-            let lines: Vec<Line> = self
-                .rfc_content
-                .lines()
-                .enumerate()
-                .map(|(line_num, line_str)| {
-                    // Highlight spans that match in the current line.
-                    // Matches are already sorted by start position.
+        // Get ToC entries for title highlighting
+        let title_lines: HashSet<LineNumber> = self
+            .rfc_toc_panel
+            .entries()
+            .iter()
+            .map(|entry| entry.line_number)
+            .collect();
+
+        // Check if we need search highlighting
+        let has_searched =
+            self.mode == AppMode::Search || !self.query_text.is_empty();
+
+        let lines: Vec<Line> = self
+            .rfc_content
+            .lines()
+            .enumerate()
+            .map(|(line_num, line_str)| {
+                let is_title = title_lines.contains(&line_num);
+
+                if has_searched
+                {
+                    // Highlight search match
                     if let Some(matches) = self.query_matches.get(&line_num)
                     {
-                        let mut spans = Vec::new();
-                        let mut last_end = 0;
-
-                        for match_span in matches
-                        {
-                            if match_span.start > last_end
-                            {
-                                spans.push(Span::raw(
-                                    &line_str[last_end..match_span.start],
-                                ));
-                            }
-                            last_end = match_span.end;
-
-                            spans.push(Span::styled(
-                                &line_str[match_span.clone()],
-                                MATCH_HIGHLIGHT_STYLE,
-                            ));
-                        }
-                        if last_end < line_str.len()
-                        {
-                            spans.push(Span::raw(&line_str[last_end..]));
-                        }
-                        Line::from(spans)
+                        Self::build_line_with_search_and_title_highlights(
+                            line_str, matches, is_title,
+                        )
+                    }
+                    // Title highlighting on search mode
+                    else if is_title
+                    {
+                        Line::from(Span::styled(
+                            line_str,
+                            TITLE_HIGHLIGHT_STYLE,
+                        ))
                     }
                     else
                     {
-                        // No matches, leave the line as is.
                         Line::from(line_str)
                     }
-                })
-                .collect();
+                }
+                else if is_title
+                {
+                    // Only title highlighting
+                    Line::from(Span::styled(line_str, TITLE_HIGHLIGHT_STYLE))
+                }
+                else
+                {
+                    // No highlighting
+                    Line::from(line_str)
+                }
+            })
+            .collect();
 
-            Text::from(lines)
-        }
-        else
+        Text::from(lines)
+    }
+
+    /// Builds a line with both search and title highlighting.
+    ///
+    /// # Arguments
+    ///
+    /// * `line_str` - The line content
+    /// * `matches` - Search match spans in the line
+    /// * `is_title` - Whether this line is a title
+    ///
+    /// # Returns
+    ///
+    /// A `Line` with appropriate highlighting applied
+    fn build_line_with_search_and_title_highlights<'line_str>(
+        line_str: &'line_str str,
+        matches: &[MatchSpan],
+        is_title: bool,
+    ) -> Line<'line_str>
+    {
+        let mut spans = Vec::new();
+        let mut last_end = 0;
+
+        for match_span in matches
         {
-            // No highlights
-            Text::raw(&self.rfc_content)
+            // Add non-matching text before this match
+            if match_span.start > last_end
+            {
+                let text = &line_str[last_end..match_span.start];
+                if is_title
+                {
+                    spans.push(Span::styled(text, TITLE_HIGHLIGHT_STYLE));
+                }
+                else
+                {
+                    spans.push(Span::raw(text));
+                }
+            }
+
+            // Add the search match with search highlighting
+            // (takes precedence over title highlighting)
+            spans.push(Span::styled(
+                &line_str[match_span.clone()],
+                MATCH_HIGHLIGHT_STYLE,
+            ));
+
+            last_end = match_span.end;
         }
+
+        // Add remaining text after the last match
+        if last_end < line_str.len()
+        {
+            let text = &line_str[last_end..];
+            if is_title
+            {
+                spans.push(Span::styled(text, TITLE_HIGHLIGHT_STYLE));
+            }
+            else
+            {
+                spans.push(Span::raw(text));
+            }
+        }
+
+        Line::from(spans)
     }
 
     /// Renders the application UI to the provided frame.
