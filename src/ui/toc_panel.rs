@@ -16,6 +16,8 @@ const TOC_HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::LightYellow)
     .add_modifier(Modifier::BOLD);
 
+const TOC_BORDER_STYLE: Style = Style::new().fg(Color::Gray);
+
 /// Represents an entry in the table of contents.
 ///
 /// Each entry contains a title and its corresponding line number
@@ -85,9 +87,15 @@ impl TocPanel
         let list = List::new(items)
             .block(
                 Block::default()
-                    .borders(Borders::ALL)
-                    .title("Table of Contents")
-                    .title_alignment(Alignment::Center),
+                    .borders(Borders::RIGHT)
+                    .border_style(TOC_BORDER_STYLE)
+                    .title("Contents")
+                    .title_alignment(Alignment::Left)
+                    .title_style(
+                        Style::new()
+                            .fg(Color::White)
+                            .add_modifier(Modifier::BOLD),
+                    ),
             )
             .highlight_style(TOC_HIGHLIGHT_STYLE)
             .highlight_symbol("> ");

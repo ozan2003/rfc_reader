@@ -4,17 +4,17 @@
 //! reader. It handles the display and interaction with the documents including
 //! scrolling, searching, and navigation.
 use std::collections::HashMap;
+use std::io::stdout;
 use std::ops::Range;
 
 use bitflags::bitflags;
+use crossterm::execute;
+use crossterm::terminal::SetTitle;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{
-    Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation,
-    ScrollbarState, Wrap,
-};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
 use regex::Regex;
 
 use super::guard::TerminalGuard;
@@ -24,6 +24,10 @@ use super::toc_panel::TocPanel;
 const MATCH_HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::Yellow)
     .add_modifier(Modifier::BOLD);
+
+const STATUSBAR_STYLE: Style = Style::new()
+    .bg(Color::White)
+    .fg(Color::Black);
 
 /// Application mode that determines the current UI state.
 ///
@@ -126,6 +130,10 @@ impl App
         let rfc_toc_panel = TocPanel::new(&rfc_content);
         let rfc_line_number = rfc_content.lines().count();
 
+        let title = format!("RFC {rfc_number} - Press ? for help");
+        execute!(stdout(), SetTitle(title))
+            .expect("Couldn't set the window title");
+
         Self {
             rfc_content,
             rfc_number,
@@ -204,6 +212,15 @@ impl App
         // Clear the entire frame on each render to prevent artifacts
         frame.render_widget(Clear, frame.area());
 
+        // Create main layout with statusbar at bottom
+        let [main_area, statusbar_area] = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(0),    // Main content takes remaining space
+                Constraint::Length(1), // Statusbar takes 1 line
+            ])
+            .areas(frame.area());
+
         let content_area = if self
             .app_state
             .contains(AppStateFlags::SHOW_TOC)
@@ -215,7 +232,7 @@ impl App
                     Constraint::Percentage(25),
                     Constraint::Percentage(75),
                 ])
-                .areas(frame.area());
+                .areas(main_area);
 
             // Render ToC in the left area
             self.rfc_toc_panel.render(frame, toc_area);
@@ -226,37 +243,22 @@ impl App
         else
         {
             // Full-width layout for content only
-            frame.area()
+            main_area
         };
 
         // Render the text with highlights if in search mode or if there is a
         // search text
         let text = self.build_text();
-        let title = format!("RFC {} - Press ? for help", self.rfc_number);
 
         let paragraph = Paragraph::new(text)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title)
-                    .title_alignment(Alignment::Center),
-            )
+            .block(Block::default().title_alignment(Alignment::Center))
             .scroll((self.current_scroll_pos.try_into().unwrap(), 0));
 
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("↑"))
-            .end_symbol(Some("↓"));
-
-        let mut scrollbar_state = ScrollbarState::new(self.rfc_line_number)
-            .position(self.current_scroll_pos);
-
-        // Rendering the paragraph and the scrollbar happens here.
+        // Rendering the paragraph happens here
         frame.render_widget(paragraph, content_area);
-        frame.render_stateful_widget(
-            scrollbar,
-            content_area,
-            &mut scrollbar_state,
-        );
+
+        // Render statusbar
+        self.render_statusbar(frame, statusbar_area);
 
         // Render help if in help mode
         if self.mode == AppMode::Help
@@ -279,6 +281,116 @@ impl App
         }
     }
 
+    /// Renders the statusbar with current information.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame` - The frame to render the statusbar to
+    /// * `area` - The area to render the statusbar in
+    fn render_statusbar(&self, frame: &mut Frame, area: Rect)
+    {
+        // Split the statusbar into multiple sections
+        let [left_section, middle_section, right_section] = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Length(25), // Left: RFC info
+                Constraint::Min(0),     // Middle: Mode and progress (flexible)
+                Constraint::Length(41), // Right: Help text
+            ])
+            .areas(area);
+
+        // Left section: RFC number and mode
+        let mode_text = match self.mode
+        {
+            AppMode::Normal
+                if self
+                    .app_state
+                    .contains(AppStateFlags::SHOW_TOC) =>
+            {
+                "NORMAL (ToC)"
+            },
+            AppMode::Normal => "NORMAL",
+            AppMode::Help => "HELP",
+            AppMode::Search => "SEARCH",
+        };
+
+        let left_text = format!("RFC {} | {}", self.rfc_number, mode_text);
+        let left_statusbar = Paragraph::new(left_text).style(STATUSBAR_STYLE);
+        frame.render_widget(left_statusbar, left_section);
+
+        // Middle section: Line position and search info
+        let progress_percentage = if self.rfc_line_number > 0
+        {
+            self.current_scroll_pos * 100 / self.rfc_line_number
+        }
+        else
+        {
+            0
+        };
+
+        let search_info = if self.query_text.is_empty()
+        {
+            String::new()
+        }
+        else
+        {
+            let total_matches = self.query_match_line_nums.len();
+            if total_matches > 0
+            {
+                format!(
+                    " | Match {}/{}",
+                    self.current_query_match_index + 1,
+                    total_matches
+                )
+            }
+            else
+            {
+                " | No matches".to_string()
+            }
+        };
+
+        let middle_text = format!(
+            "Line {}/{} ({}%){}",
+            self.current_scroll_pos + 1,
+            self.rfc_line_number,
+            progress_percentage,
+            search_info
+        );
+        let middle_statusbar = Paragraph::new(middle_text)
+            .style(STATUSBAR_STYLE)
+            .alignment(Alignment::Center);
+        frame.render_widget(middle_statusbar, middle_section);
+
+        // Right section: Help text
+        // Show basic controls based on the current mode.
+        let right_text = match self.mode
+        {
+            // Normal, ToC shown
+            AppMode::Normal
+                if self
+                    .app_state
+                    .contains(AppStateFlags::SHOW_TOC) =>
+            {
+                "t:toggle ToC  w/s:nav  Enter:jump  q:quit"
+            },
+            // Normal, when there are matches AND query text is not empty
+            AppMode::Normal
+                if !self.query_text.is_empty() &&
+                    !self.query_match_line_nums.is_empty() =>
+            {
+                "n/N:next/prev  Esc:clear"
+            },
+            // Normal, for viewing
+            AppMode::Normal => "up/down:scroll  /:search  ?:help  q:quit",
+            AppMode::Help => "?:close",
+            AppMode::Search => "Enter:search  Esc:cancel",
+        };
+        let right_statusbar = Paragraph::new(right_text)
+            .style(STATUSBAR_STYLE)
+            .alignment(Alignment::Right);
+        frame.render_widget(right_statusbar, right_section);
+    }
+
     /// Renders the help overlay with keyboard shortcuts.
     ///
     /// # Arguments
@@ -290,7 +402,7 @@ impl App
         let area = centered_rect(
             frame.area(),
             Constraint::Percentage(60),
-            Constraint::Percentage(60),
+            Constraint::Percentage(65),
         );
 
         // Clear the area first to make it fully opaque
@@ -303,12 +415,15 @@ impl App
             Line::from("j/k or ↓/↑: Scroll down/up"),
             Line::from("f/b or PgDn/PgUp: Scroll page down/up"),
             Line::from("g/G: Go to start/end of document"),
+            Line::from(""),
             Line::from("t: Toggle table of contents"),
             Line::from("w/s: Navigate ToC up/down"),
             Line::from("Enter: Jump to ToC entry"),
+            Line::from(""),
             Line::from("/: Search"),
             Line::from("n/N: Next/previous search result"),
             Line::from("Esc: Reset search highlights"),
+            Line::from(""),
             Line::from("q: Quit"),
             Line::from("?: Toggle help"),
         ]);
@@ -335,10 +450,9 @@ impl App
     /// * `frame` - The frame to render the search box to
     fn render_search(&self, frame: &mut Frame)
     {
-        // Same logic as the help box.
         let area = Rect::new(
             frame.area().width / 4,
-            frame.area().height - 3,
+            frame.area().height - 4,
             frame.area().width / 2,
             3,
         );
