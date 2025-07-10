@@ -72,8 +72,8 @@ C:\Users\{YOUR_USERNAME}\AppData\Roaming\rfc_reader\config
 
 ## Contributing
 
-Contributions are welcome, feel free to submit a Pull Request.
+I don't know very well about contribution/PR stuff. Contact me or create a issue if for any issues or suggestions.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
