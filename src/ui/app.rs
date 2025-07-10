@@ -363,8 +363,8 @@ impl App
     fn render_statusbar(&self, frame: &mut Frame, area: Rect)
     {
         // Constants for layout
-        const LEFT_SECTION_MIN_WIDTH: u16 = 25;
-        const RIGHT_SECTION_MIN_WIDTH: u16 = 45;
+        const LEFT_SECTION_MIN_WIDTH: u16 = 40;
+        const RIGHT_SECTION_MIN_WIDTH: u16 = 42;
 
         let [left_section, middle_section, right_section] = Layout::default()
             .direction(Direction::Horizontal)
@@ -373,24 +373,25 @@ impl App
                 Constraint::Min(0), // Middle takes remaining space
                 Constraint::Min(RIGHT_SECTION_MIN_WIDTH),
             ])
+            .flex(Flex::SpaceBetween)
             .areas(area);
 
         // Left section
-        let mode_text = self.get_mode_text();
-        let left_text = format!("RFC {} | {}", self.rfc_number, mode_text);
+        let progress_text = self.build_progress_text();
+        let left_text = format!("RFC {} | {}", self.rfc_number, progress_text);
         let left_statusbar = Paragraph::new(left_text).style(STATUSBAR_STYLE);
         frame.render_widget(left_statusbar, left_section);
 
         // Middle section
-        let middle_text = self.build_progress_text();
-        let middle_statusbar = Paragraph::new(middle_text)
+        let mode_text = self.get_mode_text();
+        let middle_statusbar = Paragraph::new(mode_text)
             .style(STATUSBAR_STYLE)
             .alignment(Alignment::Center);
         frame.render_widget(middle_statusbar, middle_section);
 
         // Right section
-        let right_text = self.get_help_text();
-        let right_statusbar = Paragraph::new(right_text)
+        let help_text = self.get_help_text();
+        let right_statusbar = Paragraph::new(help_text)
             .style(STATUSBAR_STYLE)
             .alignment(Alignment::Right);
         frame.render_widget(right_statusbar, right_section);
@@ -438,7 +439,7 @@ impl App
         let search_info = self.build_search_info();
 
         format!(
-            "Line {}/{} ({}%){}",
+            "L {}/{} ({}%){}",
             self.current_scroll_pos + 1,
             self.rfc_line_number,
             progress_percentage,
@@ -464,14 +465,14 @@ impl App
                 self.current_query_match_index < total_matches
             {
                 format!(
-                    " | Match {}/{}",
+                    " | M {}/{}",
                     self.current_query_match_index + 1,
                     total_matches
                 )
             }
             else
             {
-                " | No matches".to_string()
+                String::new()
             }
         }
     }
