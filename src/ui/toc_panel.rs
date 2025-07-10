@@ -9,6 +9,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use regex::Regex;
+use textwrap::wrap;
 
 use super::app::LineNumber;
 
@@ -17,6 +18,8 @@ const TOC_HIGHLIGHT_STYLE: Style = Style::new()
     .add_modifier(Modifier::BOLD);
 
 const TOC_BORDER_STYLE: Style = Style::new().fg(Color::Gray);
+
+const TOC_HIGHLIGHT_SYMBOL: &str = "> ";
 
 /// Represents an entry in the table of contents.
 ///
@@ -88,10 +91,22 @@ impl TocPanel
     /// * `area` - The area within the frame to render the panel
     pub fn render(&mut self, frame: &mut Frame, area: Rect)
     {
+        // Long titles need to be wrapped to fit within the panel width.
+        // 2 for the border
+        let wrap_width = (area.width as usize)
+            .saturating_sub(TOC_HIGHLIGHT_SYMBOL.len() + 2);
+
         let items: Vec<ListItem> = self
             .entries
             .iter()
-            .map(|entry| ListItem::new(Line::raw(&entry.title)))
+            .map(|entry| {
+                let wrapped_title = wrap(&entry.title, wrap_width)
+                    .into_iter()
+                    .map(Line::raw)
+                    .collect::<Vec<Line>>();
+
+                ListItem::new(wrapped_title)
+            })
             .collect();
 
         let list = List::new(items)
@@ -108,7 +123,7 @@ impl TocPanel
                     ),
             )
             .highlight_style(TOC_HIGHLIGHT_STYLE)
-            .highlight_symbol("> ");
+            .highlight_symbol(TOC_HIGHLIGHT_SYMBOL);
 
         frame.render_stateful_widget(list, area, &mut self.state);
     }
