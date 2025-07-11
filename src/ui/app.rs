@@ -379,7 +379,9 @@ impl App
         // Left section
         let progress_text = self.build_progress_text();
         let left_text = format!("RFC {} | {}", self.rfc_number, progress_text);
-        let left_statusbar = Paragraph::new(left_text).style(STATUSBAR_STYLE);
+        let left_statusbar = Paragraph::new(left_text)
+            .style(STATUSBAR_STYLE)
+            .alignment(Alignment::Left);
         frame.render_widget(left_statusbar, left_section);
 
         // Middle section
