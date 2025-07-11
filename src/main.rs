@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow};
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, crate_version};
 use crossterm::event::{KeyCode, KeyEventKind};
 use log::{debug, error, info};
 use ratatui::Terminal;
@@ -24,6 +24,7 @@ fn main() -> Result<()>
     // Parse command line arguments
     let matches = Command::new("rfc_reader")
         .about("A terminal-based RFC reader")
+        .version(crate_version!())
         // Inform about the cache and log directory
         .after_help(format!(
             "This program caches RFCs to improve performance.\nThe cache is \
