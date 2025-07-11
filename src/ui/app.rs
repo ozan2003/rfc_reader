@@ -427,7 +427,7 @@ impl App
             0
         };
 
-        let search_info = self.build_search_info();
+        let search_info = self.build_search_info().unwrap_or_default();
 
         format!(
             "L {}/{} ({}%){}",
@@ -442,29 +442,27 @@ impl App
     ///
     /// # Returns
     ///
-    /// A string containing the current match number and total matches.
-    fn build_search_info(&self) -> String
+    /// An `Option<String>` containing the search info if there are matches,
+    /// or `None` if there are no matches or the query is empty.
+    fn build_search_info(&self) -> Option<String>
     {
         if self.query_text.is_empty()
         {
-            String::new()
+            return None;
+        }
+
+        let total_matches = self.query_match_line_nums.len();
+        if total_matches > 0 && self.current_query_match_index < total_matches
+        {
+            Some(format!(
+                " | M {}/{}",
+                self.current_query_match_index + 1,
+                total_matches
+            ))
         }
         else
         {
-            let total_matches = self.query_match_line_nums.len();
-            if total_matches > 0 &&
-                self.current_query_match_index < total_matches
-            {
-                format!(
-                    " | M {}/{}",
-                    self.current_query_match_index + 1,
-                    total_matches
-                )
-            }
-            else
-            {
-                String::new()
-            }
+            None
         }
     }
 

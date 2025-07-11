@@ -1,6 +1,6 @@
 [package]
 name = "rfc_reader"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 description = "A TUI based RFC viewer"
 repository = "https://github.com/ozan2003/rfc_reader"
