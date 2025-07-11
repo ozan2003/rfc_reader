@@ -176,24 +176,13 @@ impl App
                     // Highlight search match
                     if let Some(matches) = self.query_matches.get(&line_num)
                     {
-                        Self::build_line_with_search_and_title_highlights(
+                        return Self::build_line_with_search_and_title_highlights(
                             line_str, matches, is_title,
-                        )
-                    }
-                    // Title highlighting on search mode
-                    else if is_title
-                    {
-                        Line::from(Span::styled(
-                            line_str,
-                            TITLE_HIGHLIGHT_STYLE,
-                        ))
-                    }
-                    else
-                    {
-                        Line::from(line_str)
+                        );
                     }
                 }
-                else if is_title
+
+                if is_title
                 {
                     // Only title highlighting
                     Line::from(Span::styled(line_str, TITLE_HIGHLIGHT_STYLE))
