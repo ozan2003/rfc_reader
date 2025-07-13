@@ -3,7 +3,7 @@
 //! This module provides the main application state and logic for the
 //! reader. It handles the display and interaction with the documents including
 //! scrolling, searching, and navigation.
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io::stdout;
 use std::ops::Range;
 
@@ -152,14 +152,6 @@ impl App
     /// Builds the RFC text with highlighting for search matches and titles.
     fn build_text(&self) -> Text<'_>
     {
-        // Get ToC entries for title highlighting
-        let title_lines: HashSet<LineNumber> = self
-            .rfc_toc_panel
-            .entries()
-            .iter()
-            .map(|entry| entry.line_number)
-            .collect();
-
         // Check if we need search highlighting
         let has_searched =
             self.mode == AppMode::Search || !self.query_text.is_empty();
@@ -169,7 +161,10 @@ impl App
             .lines()
             .enumerate()
             .map(|(line_num, line_str)| {
-                let is_title = title_lines.contains(&line_num);
+                let is_title = self.rfc_toc_panel
+                                         .entries()
+                                         .binary_search_by(|entry| entry.line_number.cmp(&line_num))
+                                         .is_ok();
 
                 if has_searched
                 {

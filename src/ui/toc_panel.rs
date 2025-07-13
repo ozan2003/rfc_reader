@@ -74,6 +74,7 @@ impl TocPanel
     }
 
     /// Returns a reference to the `ToC` entries.
+    /// The entries are sorted by their first appearance in the document.
     ///
     /// # Returns
     ///
