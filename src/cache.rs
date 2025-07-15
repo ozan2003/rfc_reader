@@ -6,7 +6,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use directories::ProjectDirs;
 
 /// Cache for storing RFC documents locally.
@@ -54,19 +54,28 @@ impl RfcCache
     ///
     /// # Returns
     ///
-    /// Some(String) containing the RFC content if it exists in the cache,
-    /// or None if the RFC is not cached or cannot be read from the cache.
-    #[must_use]
-    pub fn get_cached_rfc(&self, rfc_number: u16) -> Option<String>
+    /// A Result containing the content of the RFC if it exists in the cache,
+    /// or an error if the RFC is not cached or cannot be read.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cached RFC does not exist or cannot be read.
+    pub fn get_cached_rfc(&self, rfc_number: u16) -> Result<String>
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
         if !rfc_path.exists()
         {
-            return None;
+            return Err(anyhow!(
+                "Cached RFC {rfc_number} does not exist at {}",
+                rfc_path.display()
+            ));
         }
 
-        fs::read_to_string(&rfc_path).ok()
+        fs::read_to_string(&rfc_path).context(format!(
+            "Failed to read cached RFC {rfc_number} from {}",
+            rfc_path.display()
+        ))
     }
 
     /// Stores an RFC in the cache.
@@ -104,19 +113,28 @@ impl RfcCache
     ///
     /// # Returns
     ///
-    /// Some(String) containing the RFC index if it exists in the cache,
-    /// or None if the index is not cached or cannot be read.
-    #[must_use]
-    pub fn get_cached_index(&self) -> Option<String>
+    /// A Result containing the content of the RFC index if it exists in the
+    /// cache, or an error if the index is not cached or cannot be read.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the cached index does not exist or cannot be read.
+    pub fn get_cached_index(&self) -> Result<String>
     {
         let path = self.get_index_cache_path();
 
         if !path.exists()
         {
-            return None;
+            return Err(anyhow!(
+                "Cached RFC index does not exist at {}",
+                path.display()
+            ));
         }
 
-        fs::read_to_string(&path).ok()
+        fs::read_to_string(&path).context(format!(
+            "Failed to read cached RFC index from {}",
+            path.display()
+        ))
     }
 
     /// Stores the RFC index in the cache.

@@ -99,7 +99,7 @@ fn main() -> Result<()>
 
     // Get the RFC content - first check cache, then fetch from network if
     // needed
-    let rfc_content = if let Some(cached_content) =
+    let rfc_content = if let Ok(cached_content) =
         cache.get_cached_rfc(rfc_number)
     {
         info!("Using cached version of RFC {rfc_number}");
