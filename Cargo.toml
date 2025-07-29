@@ -1,6 +1,6 @@
 [package]
 name = "rfc_reader"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 description = "A TUI based RFC viewer"
 repository = "https://github.com/ozan2003/rfc_reader"
@@ -44,3 +44,17 @@ codegen-units = 1
 panic = "abort"
 debug = false
 incremental = false
+
+[lints.clippy]
+correctness = { level = "forbid", priority = -1 }
+perf = { level = "forbid", priority = -2 }
+pedantic = { level = "deny", priority = -3 }
+style = { level = "warn", priority = -4 }
+complexity = { level = "warn", priority = -5 }
+
+redundant-clone = { level = "warn", priority = -4 }
+derive-partial-eq-without-eq = { level = "warn", priority = -5 }
+unnecessary-struct-initialization = { level = "warn", priority = -6 }
+redundant-pub-crate = { level = "warn", priority = -7 }
+missing-const-for-fn = { level = "deny", priority = -8 }
+uninlined-format-args = "allow"
