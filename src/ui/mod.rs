@@ -1,7 +1,7 @@
-//! User Interface module for the RFC Reader application.
+//! Core UI components for the RFC Reader application.
 //!
-//! Contains components for rendering and managing the terminal UI,
-//! including event handling, application state, and UI components.
+//! Provides rendering, event handling, and state management for the
+//! terminal-based user interface.
 mod app;
 mod event;
 pub mod guard;

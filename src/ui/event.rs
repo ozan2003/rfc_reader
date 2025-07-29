@@ -1,11 +1,7 @@
-//! Event handling module for the application
+//! Provides non-blocking application event handling.
 //!
-//! This module provides a mechanism to handle events
-//! from the main application thread. It uses a channel to send and receive
-//! events between the main application and a separate event handling thread.
-//!
-//! The `EventHandler` struct manages the event handling thread and provides
-//! a way to receive events through a channel.
+//! Runs an event listener on a separate thread, forwarding all events
+//! to the main application via a channel.
 use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};

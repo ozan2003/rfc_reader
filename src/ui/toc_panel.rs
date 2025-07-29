@@ -1,8 +1,6 @@
-//! Table of Contents Panel
+//! Manages the RFC Table of Contents panel.
 //!
-//! A panel that displays and manages a table of contents for an RFC document.
-//!
-//! Provides navigation capabilities and tracks the currently selected entry.
+//! Displays, navigates, and tracks selection for RFC document entries.
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -13,18 +11,20 @@ use textwrap::wrap;
 
 use super::app::LineNumber;
 
+// Style for each individual ToC entry
 const TOC_HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::LightYellow)
     .add_modifier(Modifier::BOLD);
 
+// Style for the ToC border
 const TOC_BORDER_STYLE: Style = Style::new().fg(Color::Gray);
 
+// Symbol used to highlight the currently selected ToC entry
 const TOC_HIGHLIGHT_SYMBOL: &str = "> ";
 
-/// Represents an entry in the table of contents.
+/// Represents a table of contents entry.
 ///
-/// Each entry contains a title and its corresponding line number
-/// in the document content.
+/// Contains a title and its document line number.
 #[derive(Debug, Clone, Default)]
 pub struct TocEntry
 {
@@ -73,12 +73,11 @@ impl TocPanel
         Self { entries, state }
     }
 
-    /// Returns a reference to the `ToC` entries.
-    /// The entries are sorted by their first appearance in the document.
+    /// Returns a slice of `ToC` entries, sorted by their first appearance.
     ///
     /// # Returns
     ///
-    /// A slice of all `ToC` entries
+    /// A slice of all `ToC` entries.
     pub fn entries(&self) -> &[TocEntry]
     {
         &self.entries

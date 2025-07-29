@@ -1,10 +1,11 @@
-//! Terminal state management.
+//! Provides a RAII guard for safe terminal lifecycle management.
 //!
-//! Ensures the terminal is properly initialized for the application and
-//! restored to its original state when the program exits.
+//! This module uses the RAII (Resource Acquisition Is Initialization) pattern
+//! to manage the terminal state.
 //!
-//! It also sets up a panic hook to handle panics gracefully and the terminal
-//! backend for the terminal UI.
+//! A guard object is created to initialize the TUI,
+//! and its `Drop` implementation automatically restores the terminal when it
+//! goes out of scope, either on normal exit or during a panic unwind.
 use std::io::{Result as IoResult, stdout};
 use std::panic::{set_hook, take_hook};
 
@@ -17,28 +18,27 @@ use log::error;
 use ratatui::Terminal;
 use ratatui::backend::{Backend as RatatuiBackend, CrosstermBackend};
 
-/// Manage terminal state with RAII
+/// RAII wrapper for terminal state.
 ///
-/// Responsible for restoring the terminal to its original state when the
-/// program exits.
+/// Manages the terminal's configuration, ensuring it is always returned
+/// to its original state when this struct is dropped.
 pub struct TerminalGuard;
 
 impl TerminalGuard
 {
-    /// Create a new `TerminalGuard`
+    /// Creates a `TerminalGuard` for TUI setup.
     ///
-    /// This does the standard terminal setup:
-    /// - Enters raw mode
-    /// - Enters alternate screen
+    /// Configures the terminal by entering raw mode and switching to the
+    /// alternate screen buffer.
     ///
     /// # Returns
     ///
-    /// Returns a new `TerminalGuard` instance.
+    /// The `TerminalGuard`. Holding this instance guarantees terminal
+    /// restoration upon its drop.
     ///
     /// # Errors
     ///
-    /// Returns an error if the terminal fails to enter raw mode or leave
-    /// alternate screen.
+    /// On failure to enter raw mode or switch screens.
     pub fn new() -> IoResult<Self>
     {
         // Setup terminal
@@ -50,13 +50,12 @@ impl TerminalGuard
 
 impl Drop for TerminalGuard
 {
-    /// Drop the `TerminalGuard`
+    /// Restores the terminal state.
     ///
-    /// Restores the terminal to a normal state.
+    /// Automatically called on `TerminalGuard` drop.
     ///
-    /// This does the following:
-    /// - Exits raw mode
-    /// - Switches back to the main screen
+    /// Exits raw mode and
+    /// returns to the main screen, ensuring a clean terminal state.
     fn drop(&mut self)
     {
         // Terminal will be borked when failure, at least inform the user
@@ -79,10 +78,6 @@ impl Drop for TerminalGuard
 /// # Returns
 ///
 /// Returns the terminal.
-///
-/// # Errors
-///
-/// Returns an error if the terminal fails to initialize.
 pub fn init_tui() -> IoResult<Terminal<impl RatatuiBackend>>
 {
     // Terminal setup is now handled by TerminalGuard

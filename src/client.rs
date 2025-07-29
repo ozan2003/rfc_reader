@@ -1,6 +1,6 @@
-//! Client module for fetching RFCs from the RFC Editor's website.
+//! RFC client for fetching documents.
 //!
-//! Handles network requests for the RFC reader application.
+//! Manages network requests to the RFC Editor's website.
 use std::io::Read;
 use std::time::Duration;
 

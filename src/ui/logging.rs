@@ -1,8 +1,7 @@
-//! Logging utilities
+//! Provides application logging utilities.
 //!
-//! This module provides functionality to initialize logging for the
-//! application.
-
+//! Handles the initialization and configuration of the application's
+//! logging system.
 use std::fs::{File, create_dir_all, remove_file};
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};

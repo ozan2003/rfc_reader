@@ -1,7 +1,6 @@
-//! Cache module for storing RFC documents locally.
+//! Manages local caching of RFC documents.
 //!
-//! Responsible for handling local storage of RFC documents to minimize
-//! redundant network requests by caching content on disk.
+//! Stores document content on disk to minimize redundant network requests.
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;

@@ -1,8 +1,8 @@
-//! Application module for the reader.
+//! Core application logic and app state management.
 //!
-//! This module provides the main application state and logic for the
-//! reader. It handles the display and interaction with the documents including
-//! scrolling, searching, and navigation.
+//! Provides the central application state and handles UI rendering and user
+//! input. This includes features such as document scrolling, searching,
+//! and navigation.
 use std::collections::HashMap;
 use std::io::stdout;
 use std::ops::Range;
@@ -35,17 +35,17 @@ const STATUSBAR_STYLE: Style = Style::new()
     .bg(Color::White)
     .fg(Color::Black);
 
-/// Application mode that determines the current UI state.
+/// Application mode for the current UI state.
 ///
-/// Controls what is displayed and how user input is interpreted.
+/// Controls what is displayed and how the user input is interpreted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppMode
 {
-    /// Normal reading mode - default state
+    /// Normal reading mode, default state
     Normal,
-    /// Help overlay is displayed
+    /// Help overlay being displayed
     Help,
-    /// Search mode - accepting search input
+    /// Search mode, accepting search input
     Search,
 }
 
@@ -54,11 +54,11 @@ bitflags! {
     #[derive(Debug)]
     pub struct AppStateFlags: u8
     {
-        /// Flag indicating the application should run
+        /// Application should continue running
         const SHOULD_RUN = 1;
-        /// Flag indicating table of contents should be displayed
+        /// Whether table of contents should be displayed
         const SHOW_TOC = 1 << 1;
-        /// Search yields no results.
+        /// Whether search yields no results
         const HAS_NO_RESULTS = 1 << 2;
     }
 }
@@ -77,10 +77,10 @@ pub(super) type LineNumber = usize;
 /// Type alias for match spans of a line.
 type MatchSpan = Range<usize>;
 
-/// Main application state for the RFC reader.
+/// Manages the core state and UI logic.
 ///
-/// Handles the display and interaction with RFC documents including
-/// scrolling, searching, and navigation.
+/// This includes rendering the document, processing user input, and handling
+/// interactions like scrolling, searching, navigation and graceful shutdown.
 pub struct App
 {
     // Core document
@@ -124,7 +124,7 @@ impl App
     ///
     /// # Arguments
     ///
-    /// * `rfc_number` - The RFC number being displayed
+    /// * `rfc_number` - The RFC number of the document
     /// * `content` - The content of the RFC document
     ///
     /// # Returns
@@ -264,7 +264,7 @@ impl App
     ///
     /// # Panics
     ///
-    /// Panics if the frame is not the correct size.
+    /// Panics if the frame cannot be rendered.
     pub fn render(&mut self, frame: &mut Frame)
     {
         // Clear the entire frame on each render to prevent artifacts
@@ -338,7 +338,7 @@ impl App
         }
     }
 
-    /// Renders the statusbar with current information.
+    /// Renders the statusbar with current status.
     ///
     /// # Arguments
     ///
@@ -383,7 +383,7 @@ impl App
         frame.render_widget(right_statusbar, right_section);
     }
 
-    /// Builds the mode text for the statusbar.
+    /// Builds the mode text representation for the statusbar.
     ///
     /// # Returns
     ///
@@ -434,6 +434,7 @@ impl App
     }
 
     /// Builds the search info text for the statusbar.
+    /// This includes the current match index and total match count.
     ///
     /// # Returns
     ///
@@ -462,6 +463,7 @@ impl App
     }
 
     /// Builds the help text for the statusbar.
+    /// Helps the user understand available commands.
     ///
     /// # Returns
     ///
@@ -593,6 +595,7 @@ impl App
             Constraint::Percentage(25),
         );
 
+        // Clear the area first to make it fully opaque
         frame.render_widget(Clear, area);
 
         let text = Text::raw("Search yielded nothing");
@@ -617,6 +620,7 @@ impl App
     /// * `amount` - Number of lines to scroll up
     pub const fn scroll_up(&mut self, amount: LineNumber)
     {
+        // Don't allow wrapping, once we reach the top, stay there.
         self.current_scroll_pos = self
             .current_scroll_pos
             .saturating_sub(amount);
@@ -631,6 +635,7 @@ impl App
     {
         let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
         // Clamp the scroll position to the last line.
+        // Once we reach the bottom, stay there.
         self.current_scroll_pos =
             (self.current_scroll_pos + amount).min(last_line_pos);
     }
@@ -659,7 +664,7 @@ impl App
     pub fn enter_search_mode(&mut self)
     {
         self.mode = AppMode::Search;
-        self.query_text.clear();
+        self.query_text.clear(); // Start with an empty search
     }
 
     /// Exits search mode and returns to normal mode.
@@ -688,7 +693,7 @@ impl App
     ///
     /// Finds all occurrences of the search text in the RFC content
     /// and stores the results. If results are found, jumps to the
-    /// first result.
+    /// first result starting from the current scroll position.
     pub fn perform_search(&mut self)
     {
         self.query_match_line_nums.clear();
@@ -753,7 +758,9 @@ impl App
         }
     }
 
-    /// Moves to the next search result.
+    /// Moves to the next search result after the current scroll position.
+    ///
+    /// If there are no search results, does nothing.
     pub fn next_search_result(&mut self)
     {
         if self.query_match_line_nums.is_empty()
@@ -772,7 +779,9 @@ impl App
         }
     }
 
-    /// Moves to the previous search result.
+    /// Moves to the previous search result before the current scroll position.
+    ///
+    /// If there are no search results, does nothing.
     pub fn prev_search_result(&mut self)
     {
         if self.query_match_line_nums.is_empty()

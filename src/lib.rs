@@ -1,20 +1,19 @@
-//! RFC Reader Library
+//! A library for reading RFC documents in the terminal.
 //!
-//! A library for fetching, caching, and displaying RFC documents in a terminal
-//! interface.
+//! Provides functionality for fetching, caching, and rendering RFCs with a
+//! rich terminal user interface.
 //!
 //! # Features
 //!
-//! - Fetching RFCs from the official RFC Editor website
-//! - Local caching of RFC documents to reduce network requests
-//! - Terminal-based user interface with navigation and search capabilities
-//! - Table of contents generation and navigation
+//! - Fetching RFCs from the official RFC Editor website.
+//! - Local caching of RFCs to minimize network requests.
+//! - Terminal UI with navigation, search, and table of contents.
 //!
 //! # Modules
 //!
-//! - `client`: HTTP client for fetching RFCs from remote sources
-//! - `cache`: Local storage for RFCs to improve performance
-//! - `ui`: Terminal user interface components and event handling
+//! - `client`: HTTP client for remote RFC fetching.
+//! - `cache`: Local storage for performance improvement.
+//! - `ui`: Terminal user interface components and event handling.
 pub mod cache;
 pub mod client;
 pub mod ui;
