@@ -88,7 +88,7 @@ fn main() -> Result<()>
     }
 
     // Setup client
-    let client = RfcClient::new();
+    let client = RfcClient::default();
 
     // Get RFC if specified
     let rfc_number = matches

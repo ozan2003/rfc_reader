@@ -7,8 +7,11 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use log::debug;
 use ureq::Agent;
+use ureq::config::Config;
+use ureq::tls::{TlsConfig, TlsProvider};
 
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
+const RFC_INDEX_URL: &str = "https://www.rfc-editor.org/rfc-index.txt";
 
 /// Client for fetching RFCs
 ///
@@ -31,14 +34,19 @@ impl RfcClient
     ///
     /// Panics if the HTTP client cannot be created.
     #[must_use]
-    pub fn new() -> Self
+    pub fn new(duration: Duration) -> Self
     {
-        let client = Agent::config_builder()
-            .timeout_global(Some(Duration::from_secs(30)))
+        let config = Config::builder()
+            .timeout_global(Some(duration))
+            .tls_config(
+                TlsConfig::builder()
+                    .provider(TlsProvider::NativeTls)
+                    .build(),
+            )
             .build();
 
         Self {
-            client: client.into(),
+            client: config.new_agent(),
         }
     }
 
@@ -93,12 +101,9 @@ impl RfcClient
     /// fails.
     pub fn fetch_rfc_index(&self) -> Result<String>
     {
-        // RFC index is available at a different URL
-        let rfc_url: &'static str = "https://www.rfc-editor.org/rfc-index.txt";
-
         let response = self
             .client
-            .get(rfc_url)
+            .get(RFC_INDEX_URL)
             .call()
             .context("Failed to fetch RFC index")?;
 
@@ -119,6 +124,6 @@ impl Default for RfcClient
 {
     fn default() -> Self
     {
-        Self::new()
+        Self::new(Duration::from_secs(30))
     }
 }
