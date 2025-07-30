@@ -9,7 +9,7 @@ use std::ops::Range;
 
 use bitflags::bitflags;
 use crossterm::execute;
-use crossterm::terminal::SetTitle;
+use crossterm::terminal::{SetTitle, size};
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -76,6 +76,11 @@ pub(super) type LineNumber = usize;
 
 /// Type alias for match spans of a line.
 type MatchSpan = Range<usize>;
+
+/// Minimum size of the application.
+// 94 is the minimum width for the visibility of
+// all the sections of the status bar.
+const MIN_SIZE: (u16, u16) = (94, 15);
 
 /// Manages the core state and UI logic.
 ///
@@ -267,6 +272,12 @@ impl App
     /// Panics if the frame cannot be rendered.
     pub fn render(&mut self, frame: &mut Frame)
     {
+        if Self::is_terminal_too_small()
+        {
+            Self::render_too_small_message(frame);
+            return;
+        }
+
         // Clear the entire frame on each render to prevent artifacts
         frame.render_widget(Clear, frame.area());
 
@@ -499,6 +510,19 @@ impl App
         !self.query_text.is_empty() && !self.query_match_line_nums.is_empty()
     }
 
+    /// Checks if the terminal is too small.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating if the terminal is too small.
+    fn is_terminal_too_small() -> bool
+    {
+        let (current_width, current_height) =
+            size().expect("Couldn't get terminal size");
+
+        current_width < MIN_SIZE.0 || current_height < MIN_SIZE.1
+    }
+
     /// Renders the help overlay with keyboard shortcuts.
     ///
     /// # Arguments
@@ -611,6 +635,95 @@ impl App
             .style(Style::default());
 
         frame.render_widget(no_search_box, area);
+    }
+
+    /// Renders the too small message.
+    ///
+    /// The message is displayed when the terminal is too small to display
+    /// the application.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame` - The frame to render the too small message to
+    fn render_too_small_message(frame: &mut Frame)
+    {
+        const ERROR_TEXT: &str = "Terminal size is too small:";
+
+        let (current_width, current_height) =
+            size().expect("Couldn't get terminal size");
+        let (min_width, min_height) = MIN_SIZE;
+
+        // Determine colors based on whether dimensions meet requirements
+        let current_width_color = if current_width >= min_width
+        {
+            Color::Green
+        }
+        else
+        {
+            Color::Red
+        };
+
+        let current_height_color = if current_height >= min_height
+        {
+            Color::Green
+        }
+        else
+        {
+            Color::Red
+        };
+
+        // Clear the area first to make it fully opaque
+        frame.render_widget(Clear, frame.area());
+
+        let area = centered_rect(
+            frame.area(),
+            Constraint::Min(ERROR_TEXT.len().try_into().unwrap()),
+            Constraint::Percentage(50),
+        );
+
+        let text = Text::from(vec![
+            Line::from(ERROR_TEXT),
+            Line::from(vec![
+                Span::raw("Width: "),
+                Span::styled(
+                    format!("{current_width}"),
+                    Style::default()
+                        .fg(current_width_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(", "),
+                Span::raw("Height: "),
+                Span::styled(
+                    format!("{current_height}"),
+                    Style::default()
+                        .fg(current_height_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from("Minimum required:"),
+            Line::from(vec![
+                Span::raw("Width: "),
+                Span::styled(
+                    format!("{min_width}"),
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::raw(", "),
+                Span::raw("Height: "),
+                Span::styled(
+                    format!("{min_height}"),
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]),
+        ]);
+
+        let paragraph = Paragraph::new(text).alignment(Alignment::Center);
+
+        frame.render_widget(paragraph, area);
     }
 
     /// Scrolls the document up by the specified amount.
