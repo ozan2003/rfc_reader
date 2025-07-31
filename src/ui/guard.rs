@@ -78,9 +78,9 @@ impl Drop for TerminalGuard
 /// # Returns
 ///
 /// Returns the terminal.
-/// 
+///
 /// # Errors
-/// 
+///
 /// Returns an error if the terminal fails to enter raw mode or leave
 /// alternate screen.
 pub fn init_tui() -> IoResult<Terminal<impl RatatuiBackend>>

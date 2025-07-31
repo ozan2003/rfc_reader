@@ -154,6 +154,19 @@ impl App
         }
     }
 
+    /// Checks if the terminal is too small.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating if the terminal is too small.
+    fn is_terminal_too_small() -> bool
+    {
+        let (current_width, current_height) =
+            size().expect("Couldn't get terminal size");
+
+        current_width < MIN_SIZE.0 || current_height < MIN_SIZE.1
+    }
+
     /// Builds the RFC text with highlighting for search matches and titles.
     fn build_text(&self) -> Text<'_>
     {
@@ -347,180 +360,6 @@ impl App
         {
             Self::render_no_search_results(frame);
         }
-    }
-
-    /// Renders the statusbar with current status.
-    ///
-    /// # Arguments
-    ///
-    /// * `frame` - The frame to render the statusbar to
-    /// * `area` - The area to render the statusbar in
-    fn render_statusbar(&self, frame: &mut Frame, area: Rect)
-    {
-        // Constants for layout
-        const LEFT_SECTION_MIN_WIDTH: u16 = 40;
-        const RIGHT_SECTION_MIN_WIDTH: u16 = 42;
-
-        let [left_section, middle_section, right_section] = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Min(LEFT_SECTION_MIN_WIDTH),
-                Constraint::Min(0), // Middle takes remaining space
-                Constraint::Min(RIGHT_SECTION_MIN_WIDTH),
-            ])
-            .flex(Flex::SpaceBetween)
-            .areas(area);
-
-        // Left section
-        let progress_text = self.build_progress_text();
-        let left_text = format!("RFC {} | {}", self.rfc_number, progress_text);
-        let left_statusbar = Paragraph::new(left_text)
-            .style(STATUSBAR_STYLE)
-            .alignment(Alignment::Left);
-        frame.render_widget(left_statusbar, left_section);
-
-        // Middle section
-        let mode_text = self.get_mode_text();
-        let middle_statusbar = Paragraph::new(mode_text)
-            .style(STATUSBAR_STYLE)
-            .alignment(Alignment::Center);
-        frame.render_widget(middle_statusbar, middle_section);
-
-        // Right section
-        let help_text = self.get_help_text();
-        let right_statusbar = Paragraph::new(help_text)
-            .style(STATUSBAR_STYLE)
-            .alignment(Alignment::Right);
-        frame.render_widget(right_statusbar, right_section);
-    }
-
-    /// Builds the mode text representation for the statusbar.
-    ///
-    /// # Returns
-    ///
-    /// A string containing the current mode.
-    const fn get_mode_text(&self) -> &'static str
-    {
-        match self.mode
-        {
-            AppMode::Normal
-                if self
-                    .app_state
-                    .contains(AppStateFlags::SHOW_TOC) =>
-            {
-                "NORMAL (ToC)"
-            },
-            AppMode::Normal => "NORMAL",
-            AppMode::Help => "HELP",
-            AppMode::Search => "SEARCH",
-        }
-    }
-
-    /// Builds the progress text for the statusbar.
-    ///
-    /// # Returns
-    ///
-    /// A string containing the current line number, total lines, progress
-    /// percentage, and search information.
-    fn build_progress_text(&self) -> String
-    {
-        let progress_percentage = if self.rfc_line_number > 0
-        {
-            (self.current_scroll_pos * 100) / self.rfc_line_number
-        }
-        else
-        {
-            0
-        };
-
-        let search_info = self.build_search_info().unwrap_or_default();
-
-        format!(
-            "L {}/{} ({}%){}",
-            self.current_scroll_pos + 1,
-            self.rfc_line_number,
-            progress_percentage,
-            search_info
-        )
-    }
-
-    /// Builds the search info text for the statusbar.
-    /// This includes the current match index and total match count.
-    ///
-    /// # Returns
-    ///
-    /// An `Option<String>` containing the search info if there are matches,
-    /// or `None` if there are no matches or the query is empty.
-    fn build_search_info(&self) -> Option<String>
-    {
-        if self.query_text.is_empty()
-        {
-            return None;
-        }
-
-        let total_matches = self.query_match_line_nums.len();
-        if total_matches > 0 && self.current_query_match_index < total_matches
-        {
-            Some(format!(
-                " | M {}/{}",
-                self.current_query_match_index + 1,
-                total_matches
-            ))
-        }
-        else
-        {
-            None
-        }
-    }
-
-    /// Builds the help text for the statusbar.
-    /// Helps the user understand available commands.
-    ///
-    /// # Returns
-    ///
-    /// A string containing the help text for the statusbar.
-    const fn get_help_text(&self) -> &'static str
-    {
-        match (self.mode, self.has_search_results())
-        {
-            (AppMode::Normal, _)
-                if self
-                    .app_state
-                    .contains(AppStateFlags::SHOW_TOC) =>
-            {
-                "t:toggle ToC  w/s:nav  Enter:jump  q:quit"
-            },
-            (AppMode::Normal, true) => "n/N:next/prev  Esc:clear",
-            (AppMode::Normal, false) =>
-            {
-                "up/down:scroll  /:search  ?:help  q:quit"
-            },
-            (AppMode::Help, _) => "?/Esc:close",
-            (AppMode::Search, _) => "Enter:search  Esc:cancel",
-        }
-    }
-
-    /// Checks if there are any search results.
-    ///
-    /// # Returns
-    ///
-    /// A boolean indicating if there are any search results.
-    const fn has_search_results(&self) -> bool
-    {
-        !self.query_text.is_empty() && !self.query_match_line_nums.is_empty()
-    }
-
-    /// Checks if the terminal is too small.
-    ///
-    /// # Returns
-    ///
-    /// A boolean indicating if the terminal is too small.
-    fn is_terminal_too_small() -> bool
-    {
-        let (current_width, current_height) =
-            size().expect("Couldn't get terminal size");
-
-        current_width < MIN_SIZE.0 || current_height < MIN_SIZE.1
     }
 
     /// Renders the help overlay with keyboard shortcuts.
@@ -726,6 +565,157 @@ impl App
         frame.render_widget(paragraph, area);
     }
 
+    /// Renders the statusbar with current status.
+    ///
+    /// # Arguments
+    ///
+    /// * `frame` - The frame to render the statusbar to
+    /// * `area` - The area to render the statusbar in
+    fn render_statusbar(&self, frame: &mut Frame, area: Rect)
+    {
+        // Constants for layout
+        const LEFT_SECTION_MIN_WIDTH: u16 = 40;
+        const RIGHT_SECTION_MIN_WIDTH: u16 = 42;
+
+        let [left_section, middle_section, right_section] = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Min(LEFT_SECTION_MIN_WIDTH),
+                Constraint::Min(0), // Middle takes remaining space
+                Constraint::Min(RIGHT_SECTION_MIN_WIDTH),
+            ])
+            .flex(Flex::SpaceBetween)
+            .areas(area);
+
+        // Left section
+        let progress_text = self.build_progress_text();
+        let left_text = format!("RFC {} | {}", self.rfc_number, progress_text);
+        let left_statusbar = Paragraph::new(left_text)
+            .style(STATUSBAR_STYLE)
+            .alignment(Alignment::Left);
+        frame.render_widget(left_statusbar, left_section);
+
+        // Middle section
+        let mode_text = self.get_mode_text();
+        let middle_statusbar = Paragraph::new(mode_text)
+            .style(STATUSBAR_STYLE)
+            .alignment(Alignment::Center);
+        frame.render_widget(middle_statusbar, middle_section);
+
+        // Right section
+        let help_text = self.get_help_text();
+        let right_statusbar = Paragraph::new(help_text)
+            .style(STATUSBAR_STYLE)
+            .alignment(Alignment::Right);
+        frame.render_widget(right_statusbar, right_section);
+    }
+
+    /// Builds the mode text representation for the statusbar.
+    ///
+    /// # Returns
+    ///
+    /// A string containing the current mode.
+    const fn get_mode_text(&self) -> &'static str
+    {
+        match self.mode
+        {
+            AppMode::Normal
+                if self
+                    .app_state
+                    .contains(AppStateFlags::SHOW_TOC) =>
+            {
+                "NORMAL (ToC)"
+            },
+            AppMode::Normal => "NORMAL",
+            AppMode::Help => "HELP",
+            AppMode::Search => "SEARCH",
+        }
+    }
+
+    /// Builds the progress text for the statusbar.
+    ///
+    /// # Returns
+    ///
+    /// A string containing the current line number, total lines, progress
+    /// percentage, and search information.
+    fn build_progress_text(&self) -> String
+    {
+        let progress_percentage = if self.rfc_line_number > 0
+        {
+            (self.current_scroll_pos * 100) / self.rfc_line_number
+        }
+        else
+        {
+            0
+        };
+
+        let search_info = self.build_search_info().unwrap_or_default();
+
+        format!(
+            "L {}/{} ({}%){}",
+            self.current_scroll_pos + 1,
+            self.rfc_line_number,
+            progress_percentage,
+            search_info
+        )
+    }
+
+    /// Builds the search info text for the statusbar.
+    /// This includes the current match index and total match count.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<String>` containing the search info if there are matches,
+    /// or `None` if there are no matches or the query is empty.
+    fn build_search_info(&self) -> Option<String>
+    {
+        if self.query_text.is_empty()
+        {
+            return None;
+        }
+
+        let total_matches = self.query_match_line_nums.len();
+        if total_matches > 0 && self.current_query_match_index < total_matches
+        {
+            Some(format!(
+                " | M {}/{}",
+                self.current_query_match_index + 1,
+                total_matches
+            ))
+        }
+        else
+        {
+            None
+        }
+    }
+
+    /// Builds the help text for the statusbar.
+    /// Helps the user understand available commands.
+    ///
+    /// # Returns
+    ///
+    /// A string containing the help text for the statusbar.
+    const fn get_help_text(&self) -> &'static str
+    {
+        match (self.mode, self.has_search_results())
+        {
+            (AppMode::Normal, _)
+                if self
+                    .app_state
+                    .contains(AppStateFlags::SHOW_TOC) =>
+            {
+                "t:toggle ToC  w/s:nav  Enter:jump  q:quit"
+            },
+            (AppMode::Normal, true) => "n/N:next/prev  Esc:clear",
+            (AppMode::Normal, false) =>
+            {
+                "up/down:scroll  /:search  ?:help  q:quit"
+            },
+            (AppMode::Help, _) => "?/Esc:close",
+            (AppMode::Search, _) => "Enter:search  Esc:cancel",
+        }
+    }
+
     /// Scrolls the document up by the specified amount.
     ///
     /// # Arguments
@@ -751,6 +741,15 @@ impl App
         // Once we reach the bottom, stay there.
         self.current_scroll_pos =
             (self.current_scroll_pos + amount).min(last_line_pos);
+    }
+
+    /// Jumps to the current `ToC` entry by scrolling to its line.
+    pub fn jump_to_toc_entry(&mut self)
+    {
+        if let Some(line_num) = self.rfc_toc_panel.selected_line()
+        {
+            self.current_scroll_pos = line_num;
+        }
     }
 
     /// Toggles the help overlay.
@@ -784,6 +783,16 @@ impl App
     pub const fn exit_search_mode(&mut self)
     {
         self.mode = AppMode::Normal;
+    }
+
+    /// Checks if there are any search results.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating if there are any search results.
+    const fn has_search_results(&self) -> bool
+    {
+        !self.query_text.is_empty() && !self.query_match_line_nums.is_empty()
     }
 
     /// Adds a character to the search text.
@@ -933,15 +942,6 @@ impl App
         self.current_query_match_index = 0;
         self.app_state
             .remove(AppStateFlags::HAS_NO_RESULTS);
-    }
-
-    /// Jumps to the current `ToC` entry by scrolling to its line.
-    pub fn jump_to_toc_entry(&mut self)
-    {
-        if let Some(line_num) = self.rfc_toc_panel.selected_line()
-        {
-            self.current_scroll_pos = line_num;
-        }
     }
 }
 
