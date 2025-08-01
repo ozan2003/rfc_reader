@@ -53,6 +53,7 @@ perf = { level = "forbid", priority = -2 }
 pedantic = { level = "deny", priority = -3 }
 style = { level = "warn", priority = -4 }
 complexity = { level = "warn", priority = -5 }
+suspicious = { level = "warn", priority = -6 }
 
 redundant-clone = { level = "warn", priority = -4 }
 derive-partial-eq-without-eq = { level = "warn", priority = -5 }
