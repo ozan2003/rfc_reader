@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::{Arg, ArgAction, Command, crate_version};
 use crossterm::event::{KeyCode, KeyEventKind};
 use log::{debug, error, info};
@@ -111,13 +111,14 @@ fn main() -> Result<()>
         if is_offline
         {
             error!(
-                "Cannot load RFC {rfc_number} - not in cache and offline mode \
-                 is enabled"
+                "RFC {rfc_number} unavailable: offline mode active and no \
+                 cached copy found"
             );
-            return Err(anyhow!(
-                "Cannot load RFC {rfc_number} - not in cache and offline mode \
-                 is enabled"
-            ));
+
+            bail!(
+                "Unable to access RFC {rfc_number} - network access disabled \
+                 in offline mode and RFC not cached locally"
+            );
         }
         // Fetch RFC from network since it's not in cache
         debug!("Fetching RFC {rfc_number} from network...");

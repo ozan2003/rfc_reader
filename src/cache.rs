@@ -5,7 +5,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, bail};
 use directories::ProjectDirs;
 
 /// Cache for storing RFC documents locally.
@@ -65,10 +65,10 @@ impl RfcCache
 
         if !rfc_path.exists()
         {
-            return Err(anyhow!(
+            bail!(
                 "Cached RFC {rfc_number} does not exist at {}",
                 rfc_path.display()
-            ));
+            );
         }
 
         fs::read_to_string(&rfc_path).context(format!(
@@ -124,10 +124,7 @@ impl RfcCache
 
         if !path.exists()
         {
-            return Err(anyhow!(
-                "Cached RFC index does not exist at {}",
-                path.display()
-            ));
+            bail!("Cached RFC index does not exist at {}", path.display());
         }
 
         fs::read_to_string(&path).context(format!(
