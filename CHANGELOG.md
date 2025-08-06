@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.2] - 2025-08-06
 
+### Changed
+
+- Disable unused crossterm features in [Cargo.toml](Cargo.toml) to reduce compile time
+- Roll back crossterm version to `0.28.1` from `0.29.0` to align with ratatui's crossterm dep,
+avoiding compiling twice
+
 ### Removed
 
 - Remove `rustls` dependency from [Cargo.toml](Cargo.toml) to use only native-tls for ureq
