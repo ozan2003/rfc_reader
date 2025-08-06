@@ -33,7 +33,10 @@ log = "0.4.27"
 ratatui = "0.29.0"
 regex = "1.11.1"
 textwrap = "0.16.2"
-ureq = { version = "3.0.11", features = ["native-tls"] }
+# remove rustls from dependencies since im using native-tls anyway
+ureq = { version = "3.0.11", default-features = false, features = [
+    "native-tls",
+] }
 
 [dev-dependencies]
 tempfile = "3.20.0"
