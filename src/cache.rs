@@ -257,7 +257,7 @@ impl RfcCache
     {
         // Read the directory entries.
         let entries: Vec<_> = fs::read_dir(&self.cache_dir)
-            .unwrap()
+            .expect("Failed to read cache directory")
             .filter_map(Result::ok)
             .collect();
 
@@ -279,16 +279,23 @@ impl RfcCache
                     .expect("Failed to get file name")
                     .to_string_lossy();
 
+                // Skip the index file
+                if file_name == "rfc-index.txt"
+                {
+                    println!("- RFC Index");
+                }
                 // Extract the RFC number from the file name.
-                let rfc_num = file_name
-                    .split("rfc")
-                    .nth(1)
-                    .unwrap()
-                    .split('.')
-                    .next()
-                    .unwrap();
-
-                println!("- RFC {rfc_num}");
+                else if let Some(rfc_num) = file_name
+                    .strip_prefix("rfc")
+                    .and_then(|name| name.strip_suffix(".txt"))
+                {
+                    println!("- RFC {rfc_num}");
+                }
+                else
+                {
+                    // Warn the user for stray files
+                    println!("{} (not a valid RFC document)", file_name);
+                }
             }
         }
     }

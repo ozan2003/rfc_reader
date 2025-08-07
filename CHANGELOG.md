@@ -10,7 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Use `env!()` to avoid hardcoding the crate name in [logging.rs](src/ui/logging.rs)
-and [cache.rs](src/cache.rs).
+and [cache.rs](src/cache.rs)
+- Refactor [cache.rs](src/cache.rs) to warn the user about non-RFC documents,
+inform about the RFC index
+- Improve the RFC number extraction logic and error handling in [cache.rs](src/cache.rs)
 
 ## [0.4.2] - 2025-08-06
 
