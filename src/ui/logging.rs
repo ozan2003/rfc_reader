@@ -24,7 +24,7 @@ pub static LOG_FILE_PATH: LazyLock<Mutex<PathBuf>> = LazyLock::new(|| {
         create_dir_all(&log_dir_path).expect("Failed to create log directory");
     }
 
-    Mutex::new(log_dir_path.join("rfc_reader.log"))
+    Mutex::new(log_dir_path.join(concat!(env!("CARGO_PKG_NAME"), ".log")))
 });
 
 /// Initializes the logging system for the application.
@@ -52,7 +52,7 @@ pub fn init_logging() -> Result<()>
     // Initialize the logger
     Builder::new()
         .filter_level(LevelFilter::Info)
-        .filter_module("rfc_reader", LevelFilter::Debug)
+        .filter_module(env!("CARGO_PKG_NAME"), LevelFilter::Debug)
         .format_timestamp(Some(TimestampPrecision::Millis))
         .target(Target::Pipe(Box::new(log_file)))
         .init();
