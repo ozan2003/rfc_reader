@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.3] - 2025-08-07
+## [0.5.0] - 2025-08-09
+
+### Changed
+
+- Slightly modified the logging format in [logging.rs](src/ui/logging.rs)
+- Clamp indexes to the line length to avoid out of bounds access and use safe slicing with `str::get` for better error handling in [app.rs](src/ui/app.rs)
+
+### Removed
+
+- Remove unnecessary `std::sync::Mutex` from `LOG_FILE_PATH` as `std::sync::LazyLock` is
+thread-safe in [logging.rs](src/ui/logging.rs)
+
+## [0.4.3] -- 2025-08-07
 
 ### Changed
 

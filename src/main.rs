@@ -31,7 +31,7 @@ fn main() -> Result<()>
              stored in the following directory: {}\n\nThe location of the log \
              file is: {}",
             cache.cache_dir().display(),
-            LOG_FILE_PATH.lock().unwrap().display()
+            LOG_FILE_PATH.display()
         ))
         .arg(
             Arg::new("rfc")

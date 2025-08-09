@@ -233,10 +233,13 @@ impl App
 
         for match_span in matches
         {
-            // Add non-matching text before this match
-            if match_span.start > last_end
+            // Clamp indexes to the line length to avoid out of bounds access
+            let start = match_span.start.min(line_str.len());
+            let end = match_span.end.min(line_str.len());
+
+            if start > last_end &&
+                let Some(text) = line_str.get(last_end..start)
             {
-                let text = &line_str[last_end..match_span.start];
                 if is_title
                 {
                     spans.push(Span::styled(text, TITLE_HIGHLIGHT_STYLE));
@@ -247,20 +250,18 @@ impl App
                 }
             }
 
-            // Add the search match with search highlighting
-            // (takes precedence over title highlighting)
-            spans.push(Span::styled(
-                &line_str[match_span.clone()],
-                MATCH_HIGHLIGHT_STYLE,
-            ));
+            if let Some(m) = line_str.get(start..end)
+            {
+                spans.push(Span::styled(m, MATCH_HIGHLIGHT_STYLE));
+            }
 
-            last_end = match_span.end;
+            last_end = end;
         }
 
         // Add remaining text after the last match
-        if last_end < line_str.len()
+        if last_end < line_str.len() &&
+            let Some(text) = line_str.get(last_end..)
         {
-            let text = &line_str[last_end..];
             if is_title
             {
                 spans.push(Span::styled(text, TITLE_HIGHLIGHT_STYLE));
