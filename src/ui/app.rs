@@ -10,6 +10,7 @@ use std::ops::Range;
 use bitflags::bitflags;
 use crossterm::execute;
 use crossterm::terminal::{SetTitle, size};
+use log::warn;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -34,6 +35,63 @@ const TITLE_HIGHLIGHT_STYLE: Style = Style::new()
 const STATUSBAR_STYLE: Style = Style::new()
     .bg(Color::White)
     .fg(Color::Black);
+
+// UI constants
+/// Minimum terminal width in columns for proper UI rendering.
+// Note: Gotta review when the text are edited.
+const MIN_TERMINAL_WIDTH: u16 = 94;
+/// Minimum terminal height in rows for proper UI rendering.
+const MIN_TERMINAL_HEIGHT: u16 = 15;
+
+/// Height of the status bar in rows.
+const STATUSBAR_HEIGHT_CONSTRAINT: Constraint = Constraint::Length(1);
+
+/// Statusbar left section minimum width in columns.
+const STATUSBAR_LEFT_MIN_COLS: u16 = 40;
+/// Statusbar middle section minimum width in columns.
+const STATUSBAR_MIDDLE_MIN_COLS: u16 = 0; // takes remaining space
+/// Statusbar right section minimum width in columns.
+const STATUSBAR_RIGHT_MIN_COLS: u16 = 42;
+
+/// Help overlay box width as percentage of the terminal width.
+const HELP_OVERLAY_WIDTH_CONSTRAINT: Constraint = Constraint::Percentage(60);
+/// Help overlay box height as percentage of the terminal height.
+const HELP_OVERLAY_HEIGHT_CONSTRAINT: Constraint = Constraint::Percentage(65);
+
+/// "Terminal too small" overlay height as percentage of the terminal height.
+const TOO_SMALL_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
+    Constraint::Percentage(50);
+/// "Terminal too small" overlay title text.
+const TOO_SMALL_ERROR_TEXT: &str = "Terminal size is too small:";
+
+/// No-search-results overlay width as percentage of the terminal width.
+const NO_SEARCH_OVERLAY_WIDTH_CONSTRAINT: Constraint =
+    Constraint::Percentage(40);
+/// No-search-results overlay height percentage.
+const NO_SEARCH_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
+    Constraint::Percentage(25);
+/// No-search-results overlay title text.
+const NO_SEARCH_TITLE: &str = "No matches - Press Esc to dismiss";
+/// No-search-results overlay message text.
+const NO_SEARCH_MESSAGE: &str = "Search yielded nothing";
+
+/// Search box height in rows.
+const SEARCH_BOX_HEIGHT_ROWS: u16 = 3;
+/// Horizontal start position divisor (x = width / `SEARCH_BOX_X_DIVISOR`).
+const SEARCH_BOX_X_DIVISOR: u16 = 4;
+/// Box width divisor (`box_width` = width / `SEARCH_BOX_WIDTH_DIVISOR`).
+const SEARCH_BOX_WIDTH_DIVISOR: u16 = 2;
+/// Distance from bottom in rows.
+const SEARCH_BOX_BOTTOM_OFFSET_ROWS: u16 = 4;
+
+// ToC/content split percentages.
+/// 1/4 for `ToC`, 3/4 for content
+const TOC_PERCENTAGE: u16 = 25;
+/// Constraints for the `ToC`/content split.
+const TOC_SPLIT_CONSTRAINTS: [Constraint; 2] = [
+    Constraint::Percentage(TOC_PERCENTAGE),
+    Constraint::Percentage(100 - TOC_PERCENTAGE),
+];
 
 /// Application mode for the current UI state.
 ///
@@ -76,11 +134,6 @@ pub(super) type LineNumber = usize;
 
 /// Type alias for match spans of a line.
 type MatchSpan = Range<usize>;
-
-/// Minimum size of the application.
-// 94 is the minimum width for the visibility of
-// all the sections of the status bar.
-const MIN_SIZE: (u16, u16) = (94, 15);
 
 /// Manages the core state and UI logic.
 ///
@@ -142,8 +195,10 @@ impl App
         let rfc_line_number = rfc_content.lines().count();
 
         let title = format!("RFC {rfc_number} - Press ? for help");
-        execute!(stdout(), SetTitle(title))
-            .expect("Couldn't set the window title");
+        if let Err(error) = execute!(stdout(), SetTitle(title))
+        {
+            warn!("Couldn't set the window title: {error}");
+        }
 
         Self {
             rfc_content,
@@ -164,7 +219,8 @@ impl App
         let (current_width, current_height) =
             size().expect("Couldn't get terminal size");
 
-        current_width < MIN_SIZE.0 || current_height < MIN_SIZE.1
+        current_width < MIN_TERMINAL_WIDTH ||
+            current_height < MIN_TERMINAL_HEIGHT
     }
 
     /// Builds the RFC text with highlighting for search matches and titles.
@@ -299,8 +355,8 @@ impl App
         let [main_area, statusbar_area] = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(0),    // Main content takes remaining space
-                Constraint::Length(1), // Statusbar takes 1 line
+                Constraint::Min(0), // Main content takes remaining space
+                STATUSBAR_HEIGHT_CONSTRAINT,
             ])
             .areas(frame.area());
 
@@ -311,10 +367,7 @@ impl App
             // Create layout with ToC panel on the left
             let [toc_area, content_area] = Layout::default()
                 .direction(Direction::Horizontal)
-                .constraints([
-                    Constraint::Percentage(25),
-                    Constraint::Percentage(75),
-                ])
+                .constraints(TOC_SPLIT_CONSTRAINTS)
                 .areas(main_area);
 
             // Render ToC in the left area
@@ -333,8 +386,9 @@ impl App
         // search text
         let text = self.build_text();
 
-        let paragraph = Paragraph::new(text)
-            .scroll((self.current_scroll_pos.try_into().unwrap(), 0));
+        // Clamp the scroll position instead of panicking
+        let y = u16::try_from(self.current_scroll_pos).unwrap_or(u16::MAX);
+        let paragraph = Paragraph::new(text).scroll((y, 0));
 
         // Rendering the paragraph happens here
         frame.render_widget(paragraph, content_area);
@@ -373,8 +427,8 @@ impl App
         // Create a centered rectangle.
         let area = centered_rect(
             frame.area(),
-            Constraint::Percentage(60),
-            Constraint::Percentage(65),
+            HELP_OVERLAY_WIDTH_CONSTRAINT,
+            HELP_OVERLAY_HEIGHT_CONSTRAINT,
         );
 
         // Clear the area first to make it fully opaque
@@ -423,10 +477,13 @@ impl App
     fn render_search(&self, frame: &mut Frame)
     {
         let area = Rect::new(
-            frame.area().width / 4,
-            frame.area().height - 4,
-            frame.area().width / 2,
-            3,
+            frame.area().width / SEARCH_BOX_X_DIVISOR,
+            frame
+                .area()
+                .height
+                .saturating_sub(SEARCH_BOX_BOTTOM_OFFSET_ROWS),
+            frame.area().width / SEARCH_BOX_WIDTH_DIVISOR,
+            SEARCH_BOX_HEIGHT_ROWS,
         );
 
         // Clear the area first to make it fully opaque
@@ -455,19 +512,19 @@ impl App
     {
         let area = centered_rect(
             frame.area(),
-            Constraint::Percentage(40),
-            Constraint::Percentage(25),
+            NO_SEARCH_OVERLAY_WIDTH_CONSTRAINT,
+            NO_SEARCH_OVERLAY_HEIGHT_CONSTRAINT,
         );
 
         // Clear the area first to make it fully opaque
         frame.render_widget(Clear, area);
 
-        let text = Text::raw("Search yielded nothing");
+        let text = Text::raw(NO_SEARCH_MESSAGE);
 
         let no_search_box = Paragraph::new(text)
             .block(
                 Block::default()
-                    .title("No matches - Press Esc to dismiss")
+                    .title(NO_SEARCH_TITLE)
                     .borders(Borders::ALL)
                     .style(Style::default().fg(Color::Red)),
             )
@@ -487,14 +544,11 @@ impl App
     /// * `frame` - The frame to render the too small message to
     fn render_too_small_message(frame: &mut Frame)
     {
-        const ERROR_TEXT: &str = "Terminal size is too small:";
-
         let (current_width, current_height) =
             size().expect("Couldn't get terminal size");
-        let (min_width, min_height) = MIN_SIZE;
 
         // Determine colors based on whether dimensions meet requirements
-        let current_width_color = if current_width >= min_width
+        let current_width_color = if current_width >= MIN_TERMINAL_WIDTH
         {
             Color::Green
         }
@@ -503,7 +557,7 @@ impl App
             Color::Red
         };
 
-        let current_height_color = if current_height >= min_height
+        let current_height_color = if current_height >= MIN_TERMINAL_HEIGHT
         {
             Color::Green
         }
@@ -517,12 +571,17 @@ impl App
 
         let area = centered_rect(
             frame.area(),
-            Constraint::Min(ERROR_TEXT.len().try_into().unwrap()),
-            Constraint::Percentage(50),
+            Constraint::Min(
+                TOO_SMALL_ERROR_TEXT
+                    .len()
+                    .try_into()
+                    .unwrap(),
+            ),
+            TOO_SMALL_OVERLAY_HEIGHT_CONSTRAINT,
         );
 
         let text = Text::from(vec![
-            Line::from(ERROR_TEXT),
+            Line::from(TOO_SMALL_ERROR_TEXT),
             Line::from(vec![
                 Span::raw("Width: "),
                 Span::styled(
@@ -545,7 +604,7 @@ impl App
             Line::from(vec![
                 Span::raw("Width: "),
                 Span::styled(
-                    format!("{min_width}"),
+                    format!("{MIN_TERMINAL_WIDTH}"),
                     Style::default()
                         .fg(Color::White)
                         .add_modifier(Modifier::BOLD),
@@ -553,7 +612,7 @@ impl App
                 Span::raw(", "),
                 Span::raw("Height: "),
                 Span::styled(
-                    format!("{min_height}"),
+                    format!("{MIN_TERMINAL_HEIGHT}"),
                     Style::default()
                         .fg(Color::White)
                         .add_modifier(Modifier::BOLD),
@@ -574,16 +633,12 @@ impl App
     /// * `area` - The area to render the statusbar in
     fn render_statusbar(&self, frame: &mut Frame, area: Rect)
     {
-        // Constants for layout
-        const LEFT_SECTION_MIN_WIDTH: u16 = 40;
-        const RIGHT_SECTION_MIN_WIDTH: u16 = 42;
-
         let [left_section, middle_section, right_section] = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Min(LEFT_SECTION_MIN_WIDTH),
-                Constraint::Min(0), // Middle takes remaining space
-                Constraint::Min(RIGHT_SECTION_MIN_WIDTH),
+                Constraint::Min(STATUSBAR_LEFT_MIN_COLS),
+                Constraint::Min(STATUSBAR_MIDDLE_MIN_COLS), // Middle takes remaining space
+                Constraint::Min(STATUSBAR_RIGHT_MIN_COLS),
             ])
             .flex(Flex::SpaceBetween)
             .areas(area);
@@ -950,11 +1005,16 @@ impl Default for App
 {
     fn default() -> Self
     {
+        /// Initial capacities for common collections.
+        const RFC_CONTENT_INITIAL_CAPACITY: usize = 10_000;
+        const QUERY_TEXT_INITIAL_CAPACITY: usize = 20;
+        const QUERY_RESULTS_INITIAL_CAPACITY: usize = 50;
+
         let guard =
             TerminalGuard::new().expect("Failed to create terminal guard");
 
         Self {
-            rfc_content: String::with_capacity(10000),
+            rfc_content: String::with_capacity(RFC_CONTENT_INITIAL_CAPACITY),
             rfc_number: 0,
             rfc_toc_panel: TocPanel::default(),
             rfc_line_number: 0,
@@ -962,10 +1022,14 @@ impl Default for App
             mode: AppMode::Normal,
             app_state: AppStateFlags::default(),
             guard,
-            query_text: String::with_capacity(20),
-            query_match_line_nums: Vec::with_capacity(50),
+            query_text: String::with_capacity(QUERY_TEXT_INITIAL_CAPACITY),
+            query_match_line_nums: Vec::with_capacity(
+                QUERY_RESULTS_INITIAL_CAPACITY,
+            ),
             current_query_match_index: 0,
-            query_matches: HashMap::with_capacity(50),
+            query_matches: HashMap::with_capacity(
+                QUERY_RESULTS_INITIAL_CAPACITY,
+            ),
         }
     }
 }

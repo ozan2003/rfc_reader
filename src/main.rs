@@ -37,6 +37,8 @@ fn main() -> Result<()>
             Arg::new("rfc")
                 .help("RFC number to open")
                 .value_name("NUMBER")
+                .required(true)
+                .value_parser(clap::value_parser!(u16))
                 .index(1),
         )
         .arg(
@@ -91,11 +93,9 @@ fn main() -> Result<()>
     let client = RfcClient::default();
 
     // Get RFC if specified
-    let rfc_number = matches
-        .get_one::<String>("rfc")
-        .ok_or(anyhow!("No RFC number is provided"))?
-        .parse::<u16>()
-        .context("Invalid RFC number")?;
+    let rfc_number = *matches
+        .get_one::<u16>("rfc")
+        .ok_or(anyhow!("RFC number is required"))?;
 
     // Get the RFC content - first check cache, then fetch from network if
     // needed
