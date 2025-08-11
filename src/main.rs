@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
-use clap::{Arg, ArgAction, Command, crate_version};
+use clap::{Arg, ArgAction, ArgGroup, Command, crate_version};
 use crossterm::event::{KeyCode, KeyEventKind};
 use log::{debug, error, info};
 use ratatui::Terminal;
@@ -33,13 +33,21 @@ fn main() -> Result<()>
             cache.cache_dir().display(),
             LOG_FILE_PATH.display()
         ))
+        // These args are irrelevant to `rfc`.
+        .group(ArgGroup::new("maintenance").args([
+            "clear-cache",
+            "clear-log",
+            "list",
+        ]))
         .arg(
             Arg::new("rfc")
                 .help("RFC number to open")
                 .value_name("NUMBER")
-                .required(true)
                 .value_parser(clap::value_parser!(u16))
-                .index(1),
+                .index(1)
+                .required_unless_present("maintenance")
+                // Disallow giving a NUMBER together with those actions
+                .conflicts_with("maintenance"),
         )
         .arg(
             Arg::new("clear-cache")

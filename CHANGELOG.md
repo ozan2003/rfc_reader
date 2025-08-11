@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-08-11
+
+### Changed
+
+- Grouped maintenance commands (`--list`, `--clear-cache`, `--clear-log`)
+under a single `ArgGroup` for clearer help output in [main.rs](src/main.rs)
+
+### Fixed
+
+- Relaxed positional RFC number requirement when using maintenance flags
+in [main.rs](src/main.rs)
+- Prevented combining an RFC number with maintenance actions (now rejected early)
+in [main.rs](src/main.rs)
+
 ## [0.5.1] - 2025-08-10
 
 ### Changed
@@ -19,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Slightly modified the logging format in [logging.rs](src/ui/logging.rs)
-- Clamp indexes to the line length to avoid out of bounds access and use safe slicing with `str::get` for better error handling in [app.rs](src/ui/app.rs)
+- Clamp indexes to the line length to avoid out of bounds access and use safe slicing
+with `str::get` for better error handling in [app.rs](src/ui/app.rs)
 
 ### Removed
 
