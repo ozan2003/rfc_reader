@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2025-08-12
+
+### Changed
+
+- Replace `context` with `with_context` where `format!` is used
+in [cache.rs](src/cache.rs), [client.rs](src/client.rs), and [main.rs](src/main.rs)
+
+### Fixed
+
+- The RFC file is now deleted when writing to it fails in [cache.rs](src/cache.rs)
+
 ## [0.5.2] - 2025-08-11
 
 ### Changed

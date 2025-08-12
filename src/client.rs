@@ -72,7 +72,7 @@ impl RfcClient
             .client
             .get(rfc_url)
             .call()
-            .context(format!("Failed to fetch RFC {rfc_number}"))?;
+            .with_context(|| format!("Failed to fetch RFC {rfc_number}"))?;
 
         debug!("Got response: {response:?}");
 
@@ -81,7 +81,9 @@ impl RfcClient
             .into_body()
             .into_reader()
             .read_to_string(&mut response_body)
-            .context(format!("Failed to read RFC {rfc_number} content"))?;
+            .with_context(|| {
+                format!("Failed to read RFC {rfc_number} content")
+            })?;
 
         Ok(
             // Remove the unnecesary form feed.

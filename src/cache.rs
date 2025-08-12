@@ -71,10 +71,12 @@ impl RfcCache
             );
         }
 
-        fs::read_to_string(&rfc_path).context(format!(
-            "Failed to read cached RFC {rfc_number} from {}",
-            rfc_path.display()
-        ))
+        fs::read_to_string(&rfc_path).with_context(|| {
+            format!(
+                "Failed to read cached RFC {rfc_number} from {}",
+                rfc_path.display()
+            )
+        })
     }
 
     /// Stores an RFC in the cache.
@@ -95,15 +97,20 @@ impl RfcCache
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
-        let mut file = File::create(&rfc_path).context(format!(
-            "Failed to create cache file for RFC {rfc_number}"
-        ))?;
+        let mut file = File::create(&rfc_path).with_context(|| {
+            format!("Failed to create cache file for RFC {rfc_number}")
+        })?;
 
         // Write the contents.
-        file.write_all(content.as_bytes())
-            .context(format!(
-                "Failed to write content to cache for RFC {rfc_number}",
-            ))?;
+        if let Err(write_err) = file.write_all(content.as_bytes())
+        {
+            // We already messed up but the empty file remains.
+            // Attempt cleanup, but don't let the cleanup errors override the
+            // original error
+            let _ = fs::remove_file(&rfc_path);
+
+            bail!(write_err);
+        }
 
         Ok(())
     }
@@ -127,10 +134,9 @@ impl RfcCache
             bail!("Cached RFC index does not exist at {}", path.display());
         }
 
-        fs::read_to_string(&path).context(format!(
-            "Failed to read cached RFC index from {}",
-            path.display()
-        ))
+        fs::read_to_string(&path).with_context(|| {
+            format!("Failed to read cached RFC index from {}", path.display())
+        })
     }
 
     /// Stores the RFC index in the cache.
@@ -206,17 +212,18 @@ impl RfcCache
 
             if path.is_file()
             {
-                fs::remove_file(&path).context(format!(
-                    "Failed to remove cache file: {}",
-                    path.display()
-                ))?;
+                fs::remove_file(&path).with_context(|| {
+                    format!("Failed to remove cache file: {}", path.display())
+                })?;
             }
             else if path.is_dir()
             {
-                fs::remove_dir_all(&path).context(format!(
-                    "Failed to remove cache directory: {}",
-                    path.display()
-                ))?;
+                fs::remove_dir_all(&path).with_context(|| {
+                    format!(
+                        "Failed to remove cache directory: {}",
+                        path.display()
+                    )
+                })?;
             }
         }
 
