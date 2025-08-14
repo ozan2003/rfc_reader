@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
-use clap::{Arg, ArgAction, ArgGroup, Command, crate_version};
+use clap::{ArgAction, ArgGroup, Command, arg, crate_version};
 use crossterm::event::{KeyCode, KeyEventKind};
 use log::{debug, error, info};
 use ratatui::Terminal;
@@ -12,7 +12,6 @@ use rfc_reader::logging::{LOG_FILE_PATH, clear_log_file, init_logging};
 use rfc_reader::ui::guard::{init_panic_hook, init_tui};
 use rfc_reader::ui::{App, AppMode, AppStateFlags, Event, EventHandler};
 
-#[allow(clippy::too_many_lines)]
 fn main() -> Result<()>
 {
     init_panic_hook();
@@ -39,42 +38,21 @@ fn main() -> Result<()>
             "clear-log",
             "list",
         ]))
-        .arg(
-            Arg::new("rfc")
-                .help("RFC number to open")
+        .args([
+            arg!([rfc] "RFC number to open")
                 .value_name("NUMBER")
                 .value_parser(clap::value_parser!(u16))
                 .index(1)
                 .required_unless_present("maintenance")
                 // Disallow giving a NUMBER together with those actions
                 .conflicts_with("maintenance"),
-        )
-        .arg(
-            Arg::new("clear-cache")
-                .long("clear-cache")
-                .help("Clear the RFC cache")
+            arg!(--"clear-cache" "Clear the RFC cache")
                 .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("clear-log")
-                .long("clear-log")
-                .help("Clear the log file")
+            arg!(--"clear-log" "Clear the log file").action(ArgAction::SetTrue),
+            arg!(-o --offline "Run in offline mode (only load cached RFCs)")
                 .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("offline")
-                .long("offline")
-                .short('o')
-                .help("Run in offline mode (only load cached RFCs)")
-                .action(ArgAction::SetTrue),
-        )
-        .arg(
-            Arg::new("list")
-                .long("list")
-                .short('l')
-                .help("List all cached RFCs")
-                .action(ArgAction::SetTrue),
-        )
+            arg!(-l --list "List all cached RFCs").action(ArgAction::SetTrue),
+        ])
         .get_matches();
 
     // Clear cache if requested
