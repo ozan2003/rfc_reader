@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-08-22
+
+## Changed
+
+- Updated dependencies to their latest versions
+- Moved the constants to their respective methods in [app.rs](src/ui/app.rs) for better organization
+- Use `Box<str>` instead of `String` for RFC content and ToC panel contents in [cache.rs](src/cache.rs),
+[client.rs](src/client.rs), [app.rs](src/ui/app.rs) and [toc_panel.rs](src/ui/toc_panel.rs)
+
 ## [0.5.4] - 2025-08-14
 
 ### Changed

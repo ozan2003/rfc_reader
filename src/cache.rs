@@ -59,7 +59,7 @@ impl RfcCache
     /// # Errors
     ///
     /// Returns an error if the cached RFC does not exist or cannot be read.
-    pub fn get_cached_rfc(&self, rfc_number: u16) -> Result<String>
+    pub fn get_cached_rfc(&self, rfc_number: u16) -> Result<Box<str>>
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
@@ -71,12 +71,14 @@ impl RfcCache
             );
         }
 
-        fs::read_to_string(&rfc_path).with_context(|| {
+        let content = fs::read_to_string(&rfc_path).with_context(|| {
             format!(
                 "Failed to read cached RFC {rfc_number} from {}",
                 rfc_path.display()
             )
-        })
+        })?;
+
+        Ok(content.into_boxed_str())
     }
 
     /// Stores an RFC in the cache.
@@ -125,7 +127,7 @@ impl RfcCache
     /// # Errors
     ///
     /// Returns an error if the cached index does not exist or cannot be read.
-    pub fn get_cached_index(&self) -> Result<String>
+    pub fn get_cached_index(&self) -> Result<Box<str>>
     {
         let path = self.get_index_cache_path();
 
@@ -134,9 +136,11 @@ impl RfcCache
             bail!("Cached RFC index does not exist at {}", path.display());
         }
 
-        fs::read_to_string(&path).with_context(|| {
+        let content = fs::read_to_string(&path).with_context(|| {
             format!("Failed to read cached RFC index from {}", path.display())
-        })
+        })?;
+
+        Ok(content.into_boxed_str())
     }
 
     /// Stores the RFC index in the cache.

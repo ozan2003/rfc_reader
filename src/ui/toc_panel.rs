@@ -29,7 +29,7 @@ const TOC_HIGHLIGHT_SYMBOL: &str = "> ";
 pub struct TocEntry
 {
     /// The title text of the section
-    pub title: String,
+    pub title: Box<str>,
     /// The line number where this section appears in the document
     pub line_number: LineNumber,
 }
@@ -418,7 +418,8 @@ pub mod parsing
                             if section_regex.is_match(doc_line)
                             {
                                 return Some(TocEntry {
-                                    title: format!("{section_num} {title}"),
+                                    title: format!("{section_num} {title}")
+                                        .into(),
                                     line_number,
                                 });
                             }
@@ -467,7 +468,7 @@ pub mod parsing
                 if parts.len() == 2 && !parts[0].contains(' ')
                 {
                     entries.push(TocEntry {
-                        title: line.to_string(),
+                        title: line.into(),
                         line_number,
                     });
                     section_pattern = true;
@@ -480,7 +481,7 @@ pub mod parsing
                 line == line.to_uppercase()
             {
                 entries.push(TocEntry {
-                    title: line.to_string(),
+                    title: line.into(),
                     line_number,
                 });
             }

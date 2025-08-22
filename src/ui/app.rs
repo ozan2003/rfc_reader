@@ -43,47 +43,6 @@ const MIN_TERMINAL_WIDTH: u16 = 94;
 /// Minimum terminal height in rows for proper UI rendering.
 const MIN_TERMINAL_HEIGHT: u16 = 15;
 
-/// Height of the status bar in rows.
-const STATUSBAR_HEIGHT_CONSTRAINT: Constraint = Constraint::Length(1);
-
-/// Statusbar left section minimum width in columns.
-const STATUSBAR_LEFT_MIN_COLS: u16 = 40;
-/// Statusbar middle section minimum width in columns.
-const STATUSBAR_MIDDLE_MIN_COLS: u16 = 0; // takes remaining space
-/// Statusbar right section minimum width in columns.
-const STATUSBAR_RIGHT_MIN_COLS: u16 = 42;
-
-/// Help overlay box width as percentage of the terminal width.
-const HELP_OVERLAY_WIDTH_CONSTRAINT: Constraint = Constraint::Percentage(60);
-/// Help overlay box height as percentage of the terminal height.
-const HELP_OVERLAY_HEIGHT_CONSTRAINT: Constraint = Constraint::Percentage(65);
-
-/// "Terminal too small" overlay height as percentage of the terminal height.
-const TOO_SMALL_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
-    Constraint::Percentage(50);
-/// "Terminal too small" overlay title text.
-const TOO_SMALL_ERROR_TEXT: &str = "Terminal size is too small:";
-
-/// No-search-results overlay width as percentage of the terminal width.
-const NO_SEARCH_OVERLAY_WIDTH_CONSTRAINT: Constraint =
-    Constraint::Percentage(40);
-/// No-search-results overlay height percentage.
-const NO_SEARCH_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
-    Constraint::Percentage(25);
-/// No-search-results overlay title text.
-const NO_SEARCH_TITLE: &str = "No matches - Press Esc to dismiss";
-/// No-search-results overlay message text.
-const NO_SEARCH_MESSAGE: &str = "Search yielded nothing";
-
-/// Search box height in rows.
-const SEARCH_BOX_HEIGHT_ROWS: u16 = 3;
-/// Horizontal start position divisor (x = width / `SEARCH_BOX_X_DIVISOR`).
-const SEARCH_BOX_X_DIVISOR: u16 = 4;
-/// Box width divisor (`box_width` = width / `SEARCH_BOX_WIDTH_DIVISOR`).
-const SEARCH_BOX_WIDTH_DIVISOR: u16 = 2;
-/// Distance from bottom in rows.
-const SEARCH_BOX_BOTTOM_OFFSET_ROWS: u16 = 4;
-
 // ToC/content split percentages.
 /// 1/4 for `ToC`, 3/4 for content
 const TOC_PERCENTAGE: u16 = 25;
@@ -143,7 +102,7 @@ pub struct App
 {
     // Core document
     /// Content of the currently loaded RFC
-    pub rfc_content: String,
+    pub rfc_content: Box<str>,
     /// Number of the currently loaded RFC
     pub rfc_number: u16,
     /// Table of contents panel for the current document
@@ -189,7 +148,7 @@ impl App
     ///
     /// A new `App` instance initialized for the specified RFC
     #[must_use]
-    pub fn new(rfc_number: u16, rfc_content: String) -> Self
+    pub fn new(rfc_number: u16, rfc_content: Box<str>) -> Self
     {
         let rfc_toc_panel = TocPanel::new(&rfc_content);
         let rfc_line_number = rfc_content.lines().count();
@@ -342,6 +301,9 @@ impl App
     /// Panics if the frame cannot be rendered.
     pub fn render(&mut self, frame: &mut Frame)
     {
+        /// Height of the status bar in rows.
+        const STATUSBAR_HEIGHT_CONSTRAINT: Constraint = Constraint::Length(1);
+
         if Self::is_terminal_too_small()
         {
             Self::render_too_small_message(frame);
@@ -424,6 +386,13 @@ impl App
     /// * `frame` - The frame to render the help overlay to
     fn render_help(frame: &mut Frame)
     {
+        /// Help overlay box width as percentage of the terminal width.
+        const HELP_OVERLAY_WIDTH_CONSTRAINT: Constraint =
+            Constraint::Percentage(60);
+        /// Help overlay box height as percentage of the terminal height.
+        const HELP_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
+            Constraint::Percentage(65);
+
         // Create a centered rectangle.
         let area = centered_rect(
             frame.area(),
@@ -476,6 +445,17 @@ impl App
     /// * `frame` - The frame to render the search box to
     fn render_search(&self, frame: &mut Frame)
     {
+        /// Search box height in rows.
+        const SEARCH_BOX_HEIGHT_ROWS: u16 = 3;
+        /// Horizontal start position divisor (x = width /
+        /// `SEARCH_BOX_X_DIVISOR`).
+        const SEARCH_BOX_X_DIVISOR: u16 = 4;
+        /// Box width divisor (`box_width` = width /
+        /// `SEARCH_BOX_WIDTH_DIVISOR`).
+        const SEARCH_BOX_WIDTH_DIVISOR: u16 = 2;
+        /// Distance from bottom in rows.
+        const SEARCH_BOX_BOTTOM_OFFSET_ROWS: u16 = 4;
+
         let area = Rect::new(
             frame.area().width / SEARCH_BOX_X_DIVISOR,
             frame
@@ -510,6 +490,17 @@ impl App
     /// * `frame` - The frame to render the no search results message to
     fn render_no_search_results(frame: &mut Frame)
     {
+        /// No-search-results overlay width as percentage of the terminal width.
+        const NO_SEARCH_OVERLAY_WIDTH_CONSTRAINT: Constraint =
+            Constraint::Percentage(40);
+        /// No-search-results overlay height percentage.
+        const NO_SEARCH_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
+            Constraint::Percentage(25);
+        /// No-search-results overlay title text.
+        const NO_SEARCH_TITLE: &str = "No matches - Press Esc to dismiss";
+        /// No-search-results overlay message text.
+        const NO_SEARCH_MESSAGE: &str = "Search yielded nothing";
+
         let area = centered_rect(
             frame.area(),
             NO_SEARCH_OVERLAY_WIDTH_CONSTRAINT,
@@ -544,6 +535,13 @@ impl App
     /// * `frame` - The frame to render the too small message to
     fn render_too_small_message(frame: &mut Frame)
     {
+        /// "Terminal too small" overlay height as percentage of the terminal
+        /// height.
+        const TOO_SMALL_OVERLAY_HEIGHT_CONSTRAINT: Constraint =
+            Constraint::Percentage(50);
+        /// "Terminal too small" overlay title text.
+        const TOO_SMALL_ERROR_TEXT: &str = "Terminal size is too small:";
+
         let (current_width, current_height) =
             size().expect("Couldn't get terminal size");
 
@@ -633,6 +631,13 @@ impl App
     /// * `area` - The area to render the statusbar in
     fn render_statusbar(&self, frame: &mut Frame, area: Rect)
     {
+        /// Statusbar left section minimum width in columns.
+        const STATUSBAR_LEFT_MIN_COLS: u16 = 40;
+        /// Statusbar middle section minimum width in columns.
+        const STATUSBAR_MIDDLE_MIN_COLS: u16 = 0; // takes remaining space
+        /// Statusbar right section minimum width in columns.
+        const STATUSBAR_RIGHT_MIN_COLS: u16 = 42;
+
         let [left_section, middle_section, right_section] = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
@@ -1006,7 +1011,6 @@ impl Default for App
     fn default() -> Self
     {
         /// Initial capacities for common collections.
-        const RFC_CONTENT_INITIAL_CAPACITY: usize = 10_000;
         const QUERY_TEXT_INITIAL_CAPACITY: usize = 20;
         const QUERY_RESULTS_INITIAL_CAPACITY: usize = 50;
 
@@ -1014,7 +1018,7 @@ impl Default for App
             TerminalGuard::new().expect("Failed to create terminal guard");
 
         Self {
-            rfc_content: String::with_capacity(RFC_CONTENT_INITIAL_CAPACITY),
+            rfc_content: Box::from(""),
             rfc_number: 0,
             rfc_toc_panel: TocPanel::default(),
             rfc_line_number: 0,

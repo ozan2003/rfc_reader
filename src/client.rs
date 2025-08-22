@@ -63,7 +63,7 @@ impl RfcClient
     /// # Errors
     ///
     /// Returns an error if the RFC is not found or unavailable.
-    pub fn fetch_rfc(&self, rfc_number: u16) -> Result<String>
+    pub fn fetch_rfc(&self, rfc_number: u16) -> Result<Box<str>>
     {
         // RFC documents are available in TXT format
         let rfc_url = format!("{RFC_BASE_URL}{rfc_number}.txt");
@@ -87,7 +87,10 @@ impl RfcClient
 
         Ok(
             // Remove the unnecesary form feed.
-            response_body.trim().replace('\x0c', ""),
+            response_body
+                .trim()
+                .replace('\x0c', "")
+                .into_boxed_str(),
         )
     }
 
@@ -101,7 +104,7 @@ impl RfcClient
     ///
     /// Returns an error if the RFC index is not available or if the request
     /// fails.
-    pub fn fetch_rfc_index(&self) -> Result<String>
+    pub fn fetch_rfc_index(&self) -> Result<Box<str>>
     {
         let response = self
             .client
@@ -118,7 +121,7 @@ impl RfcClient
             .read_to_string(&mut response_body)
             .context("Failed to read RFC index content")?;
 
-        Ok(response_body)
+        Ok(response_body.into_boxed_str())
     }
 }
 
