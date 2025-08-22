@@ -2,6 +2,7 @@
 cl = "clippy"
 semver-head = "semver-checks check-release --baseline-rev HEAD~1"
 set-ver = "set-version --bump"
+update-deps = "upgrade"
 
 
 [build]

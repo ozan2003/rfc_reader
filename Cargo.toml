@@ -23,9 +23,9 @@ keywords = [
 license-file = "LICENSE"
 
 [dependencies]
-anyhow = "1.0.98"
-bitflags = "2.9.1"
-clap = { version = "4.5.37", features = ["cargo"] }
+anyhow = "1.0.99"
+bitflags = "2.9.2"
+clap = { version = "4.5.45", features = ["cargo"] }
 # align with ratatui's crossterm version to not compile crossterm twice
 # i'm only using event handling, no need for the serde, event-stream stuff
 crossterm = { version = "0.28.1", default-features = false, features = [
@@ -38,12 +38,12 @@ ratatui = "0.29.0"
 regex = "1.11.1"
 textwrap = "0.16.2"
 # remove rustls from dependencies since im using native-tls anyway
-ureq = { version = "3.0.11", default-features = false, features = [
+ureq = { version = "3.1.0", default-features = false, features = [
     "native-tls",
 ] }
 
 [dev-dependencies]
-tempfile = "3.20.0"
+tempfile = "3.21.0"
 
 [profile.release]
 lto = true
@@ -67,4 +67,5 @@ derive-partial-eq-without-eq = { level = "warn", priority = -5 }
 unnecessary-struct-initialization = { level = "warn", priority = -6 }
 redundant-pub-crate = { level = "warn", priority = -7 }
 missing-const-for-fn = { level = "deny", priority = -8 }
+branches_sharing_code = { level = "warn", priority = -9 }
 uninlined-format-args = "allow"
