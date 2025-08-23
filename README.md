@@ -17,6 +17,10 @@ A tool to read IETF RFCs (Request for Comments) with a TUI, allowing you to fetc
 - Automatic caching of the documents for offline reading
 - Text search functionality within document
 - Table of contents navigation
+
+> [!NOTE]
+> Table of contents section might not always be accurate, as there's no standard way to extract it from RFCs. It works best with RFCs that have a well-defined TOC.
+
 - Keyboard controls
 
 ## Screenshots
