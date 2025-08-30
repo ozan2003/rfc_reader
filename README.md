@@ -61,6 +61,10 @@ Refer to `rfc_reader --help` for more options.
 
 Refer to the [wiki](https://github.com/ozan2003/rfc_reader/wiki/Keybindings) for keybindings.
 
+## Minimum Supported Rust Version (MSRV)
+
+This project requires Rust version 1.88.0 or newer.
+
 ## Cache Location
 
 RFCs are cached locally to improve performance and enable offline reading.
