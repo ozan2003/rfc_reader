@@ -120,8 +120,11 @@ pub struct App
     /// Flags for managing the application state.
     pub app_state: AppStateFlags,
     /// Handle graceful terminal shutdown.
-    // Its purpose is its `Drop` implementation, not direct field access.
-    #[allow(dead_code)]
+    #[allow(
+        dead_code,
+        reason = "Its purpose is its `Drop` implementation, not direct field \
+                  access."
+    )]
     guard: TerminalGuard,
 
     // Search
@@ -805,6 +808,8 @@ impl App
     }
 
     /// Jumps to the current `ToC` entry by scrolling to its line.
+    ///
+    /// If no entry is selected, does nothing.
     pub fn jump_to_toc_entry(&mut self)
     {
         if let Some(line_num) = self.rfc_toc_panel.selected_line()
@@ -827,6 +832,8 @@ impl App
     }
 
     /// Toggles the table of contents panel.
+    ///
+    /// If the panel is shown, it will be hidden, and vice versa.
     pub fn toggle_toc(&mut self)
     {
         self.app_state

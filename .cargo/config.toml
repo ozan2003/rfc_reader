@@ -6,4 +6,4 @@ update-deps = "upgrade"
 
 
 [build]
-rustflags = ["-C", "target-cpu=native", "-Z", "threads=6"]
+rustflags = ["-C", "target-cpu=native"]

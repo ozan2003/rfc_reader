@@ -67,5 +67,6 @@ derive-partial-eq-without-eq = { level = "warn", priority = -5 }
 unnecessary-struct-initialization = { level = "warn", priority = -6 }
 redundant-pub-crate = { level = "warn", priority = -7 }
 missing-const-for-fn = { level = "deny", priority = -8 }
+undocumented_unsafe_blocks = { level = "deny", priority = -8 }
 branches_sharing_code = { level = "warn", priority = -9 }
 uninlined-format-args = "allow"
