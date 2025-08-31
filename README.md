@@ -63,7 +63,7 @@ Refer to the [wiki](https://github.com/ozan2003/rfc_reader/wiki/Keybindings) for
 
 ## Minimum Supported Rust Version (MSRV)
 
-This project requires Rust version 1.88.0 or newer.
+Rust 1.88.0 or newer.
 
 ## Cache Location
 
