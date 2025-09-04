@@ -349,7 +349,6 @@ mod tests
             assert!(cache_dir.join(file_name).exists());
         }
 
-        // Call the clear function
         cache.clear()?;
 
         // Verify all files have been deleted
@@ -408,7 +407,6 @@ mod tests
         let subdir_path = cache_dir.join("subdir");
         std::fs::create_dir(&subdir_path)?;
 
-        // Call the clear function
         cache.clear()?;
 
         // Verify the file is gone

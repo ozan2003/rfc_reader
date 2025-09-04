@@ -58,7 +58,6 @@ fn main() -> Result<()>
     // Clear cache if requested
     if matches.get_flag("clear-cache")
     {
-        // Clear all cached RFCs
         cache.clear()?;
         println!("Cache cleared successfully");
         return Ok(());

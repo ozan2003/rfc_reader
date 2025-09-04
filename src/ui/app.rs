@@ -325,7 +325,7 @@ impl App
             ])
             .areas(frame.area());
 
-        let content_area = if self
+        let (content_area, toc_area) = if self
             .app_state
             .contains(AppStateFlags::SHOW_TOC)
         {
@@ -335,17 +335,18 @@ impl App
                 .constraints(TOC_SPLIT_CONSTRAINTS)
                 .areas(main_area);
 
-            // Render ToC in the left area
-            self.rfc_toc_panel.render(frame, toc_area);
-
-            // Return the content area
-            content_area
+            (content_area, Some(toc_area))
         }
         else
         {
-            // Full-width layout for content only
-            main_area
+            (main_area, None)
         };
+
+        if let Some(toc_area) = toc_area
+        {
+            // Render ToC in the left area
+            self.rfc_toc_panel.render(frame, toc_area);
+        }
 
         // Render the text with highlights if in search mode or if there is a
         // search text
