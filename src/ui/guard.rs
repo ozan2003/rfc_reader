@@ -102,10 +102,10 @@ pub fn init_panic_hook()
     let original_hook = take_hook();
     set_hook(Box::new(move |panic_info| {
         // Restore terminal to normal state without panicking
-        disable_raw_mode().unwrap();
+        disable_raw_mode().expect("Failed to disable raw mode");
         stdout()
             .execute(LeaveAlternateScreen)
-            .unwrap();
+            .expect("Failed to leave alternate screen");
 
         error!("Application panicked: {panic_info}");
 

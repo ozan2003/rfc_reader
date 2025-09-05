@@ -577,7 +577,7 @@ impl App
                 TOO_SMALL_ERROR_TEXT
                     .len()
                     .try_into()
-                    .unwrap(),
+                    .expect("TOO_SMALL_ERROR_TEXT length too big to cast"),
             ),
             TOO_SMALL_OVERLAY_HEIGHT_CONSTRAINT,
         );
@@ -703,6 +703,10 @@ impl App
     ///
     /// A string containing the current line number, total lines, progress
     /// percentage, and search information.
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "LineNumber not expected to overflow"
+    )]
     fn build_progress_text(&self) -> String
     {
         let progress_percentage = if self.rfc_line_number > 0
@@ -732,6 +736,10 @@ impl App
     ///
     /// An `Option<String>` containing the search info if there are matches,
     /// or `None` if there are no matches or the query is empty.
+    #[expect(
+        clippy::arithmetic_side_effects,
+        reason = "LineNumber not expected to overflow"
+    )]
     fn build_search_info(&self) -> Option<String>
     {
         if self.query_text.is_empty()
@@ -804,8 +812,10 @@ impl App
         let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
         // Clamp the scroll position to the last line.
         // Once we reach the bottom, stay there.
-        self.current_scroll_pos =
-            (self.current_scroll_pos + amount).min(last_line_pos);
+        self.current_scroll_pos = (self
+            .current_scroll_pos
+            .saturating_add(amount))
+        .min(last_line_pos);
     }
 
     /// Jumps to the current `ToC` entry by scrolling to its line.

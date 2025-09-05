@@ -93,6 +93,10 @@ impl TocPanel
     {
         // Long titles need to be wrapped to fit within the panel width.
         // 2 for the border
+        #[expect(
+            clippy::arithmetic_side_effects,
+            reason = "usize not expected to overflow"
+        )]
         let wrap_width = (area.width as usize)
             .saturating_sub(TOC_HIGHLIGHT_SYMBOL.len() + 2);
 
@@ -250,6 +254,10 @@ pub mod parsing
         lines.enumerate().find_map(|(index, line)| {
             if TOC_HEADER_REGEX.is_match(line.trim())
             {
+                #[expect(
+                    clippy::arithmetic_side_effects,
+                    reason = "LineNumber not expected to overflow"
+                )]
                 Some(index + 1) // Skip the `ToC` header line
             }
             else
@@ -344,7 +352,8 @@ pub mod parsing
         // 2. Check empty lines
         if trimmed_line.is_empty()
         {
-            *consecutive_empty_lines += 1;
+            *consecutive_empty_lines =
+                consecutive_empty_lines.saturating_add(1);
             if *consecutive_empty_lines >= 5 && has_found_entries
             {
                 return true;
@@ -363,7 +372,7 @@ pub mod parsing
         }
         else
         {
-            *lines_without_entries += 1;
+            *lines_without_entries = lines_without_entries.saturating_add(1);
             if *lines_without_entries > 30
             {
                 return true;
@@ -412,6 +421,10 @@ pub mod parsing
                     if let Ok(section_regex) = Regex::new(&section_pattern)
                     {
                         // Look for the section in the document after the ToC
+                        #[expect(
+                            clippy::arithmetic_side_effects,
+                            reason = "LineNumber not expected to overflow"
+                        )]
                         for (line_number, doc_line) in
                             lines.enumerate().skip(index + 1)
                         {
