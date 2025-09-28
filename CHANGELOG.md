@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.3] - 2025-09-28
+
+## Added
+
+- Added reasons for lint exceptions in [main.rs](src/main.rs)
+
+## Changed
+
+- Modified the regex for document section headings in [toc_panel.rs](src/ui/toc_panel.rs)
+- Replace `std::io::Result` with `anyhow::Result` for consistency in error handling
+in [guard.rs](src/ui/guard.rs)
+- Slightly refactored search logic in [app.rs](src/ui/app.rs)
+- Use total line count instead of the byte count of the document when
+scrolling the view in [main.rs](src/main.rs)
+
 ## [0.6.2] - 2025-09-05
 
 ## Added

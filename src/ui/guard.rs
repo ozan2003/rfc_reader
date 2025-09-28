@@ -1,14 +1,15 @@
 //! Provides a RAII guard for safe terminal lifecycle management.
 //!
-//! This module uses the RAII (Resource Acquisition Is Initialization) pattern
-//! to manage the terminal state.
+//! This module leverages the RAII (Resource Acquisition Is Initialization)
+//! pattern to manage the terminal state.
 //!
 //! A guard object is created to initialize the TUI,
 //! and its `Drop` implementation automatically restores the terminal when it
 //! goes out of scope, either on normal exit or during a panic unwind.
-use std::io::{Result as IoResult, stdout};
+use std::io::stdout;
 use std::panic::{set_hook, take_hook};
 
+use anyhow::Result;
 use crossterm::ExecutableCommand;
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
@@ -39,7 +40,7 @@ impl TerminalGuard
     /// # Errors
     ///
     /// On failure to enter raw mode or switch screens.
-    pub fn new() -> IoResult<Self>
+    pub fn new() -> Result<Self>
     {
         // Setup terminal
         enable_raw_mode()?;
@@ -83,12 +84,14 @@ impl Drop for TerminalGuard
 ///
 /// Returns an error if the terminal fails to enter raw mode or leave
 /// alternate screen.
-pub fn init_tui() -> IoResult<Terminal<impl RatatuiBackend>>
+pub fn init_tui() -> Result<Terminal<impl RatatuiBackend>>
 {
     // Terminal setup is now handled by TerminalGuard
     // We just create and return the terminal
     let backend = CrosstermBackend::new(stdout());
-    Terminal::new(backend)
+    // use ? to coerce and return an appropriate `Err`
+    // wrap the resulting value in `Ok` to return `anyhow::Result`
+    Ok(Terminal::new(backend)?)
 }
 
 /// Initialize the panic hook to handle panics

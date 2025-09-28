@@ -91,7 +91,7 @@ impl Default for AppStateFlags
 /// Type alias for line numbers.
 pub(super) type LineNumber = usize;
 
-/// Type alias for match spans of a line.
+/// Type alias for matches spanning a line.
 type MatchSpan = Range<usize>;
 
 /// Manages the core state and UI logic.
@@ -107,7 +107,7 @@ pub struct App
     pub rfc_number: u16,
     /// Table of contents panel for the current document
     pub rfc_toc_panel: TocPanel,
-    /// Line number of the content
+    /// Total line number of the content
     pub rfc_line_number: LineNumber,
 
     // Navigation
@@ -742,24 +742,18 @@ impl App
     )]
     fn build_search_info(&self) -> Option<String>
     {
-        if self.query_text.is_empty()
+        if !self.has_search_results()
         {
             return None;
         }
 
-        let total_matches = self.query_match_line_nums.len();
-        if total_matches > 0 && self.current_query_match_index < total_matches
-        {
-            Some(format!(
-                " | M {}/{}",
-                self.current_query_match_index + 1,
-                total_matches
-            ))
-        }
-        else
-        {
-            None
-        }
+        let total_matches_n: LineNumber = self.query_match_line_nums.len();
+        // Clamp index to last valid match
+        let index: LineNumber = self
+            .current_query_match_index
+            .min(total_matches_n.saturating_sub(1));
+
+        Some(format!(" | M {}/{}", index + 1, total_matches_n))
     }
 
     /// Builds the help text for the statusbar.
@@ -809,7 +803,7 @@ impl App
     /// * `amount` - Number of lines to scroll down
     pub fn scroll_down(&mut self, amount: LineNumber)
     {
-        let last_line_pos = self.rfc_line_number.saturating_sub(1); // Last line
+        let last_line_pos = self.rfc_line_number.saturating_sub(1);
         // Clamp the scroll position to the last line.
         // Once we reach the bottom, stay there.
         self.current_scroll_pos = (self
@@ -906,6 +900,7 @@ impl App
         }
 
         let pattern = regex::escape(&self.query_text);
+        // TODO: Could cache the regexes for repeated searches
         let Ok(regex) = Regex::new(&format!("(?i){pattern}"))
         else
         {
@@ -924,6 +919,10 @@ impl App
 
             if !matches_in_line.is_empty()
             {
+                // Shave off excess capacity.
+                // Might be premature optimization, i don't know.
+                matches_in_line.shrink_to_fit();
+
                 // Add the line number and matches to the search results.
                 self.query_match_line_nums.push(line_num);
 
@@ -964,7 +963,7 @@ impl App
     /// If there are no search results, does nothing.
     pub fn next_search_result(&mut self)
     {
-        if self.query_match_line_nums.is_empty()
+        if !self.has_search_results()
         {
             return;
         }
@@ -985,7 +984,7 @@ impl App
     /// If there are no search results, does nothing.
     pub fn prev_search_result(&mut self)
     {
-        if self.query_match_line_nums.is_empty()
+        if !self.has_search_results()
         {
             return;
         }

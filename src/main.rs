@@ -129,7 +129,12 @@ fn main() -> Result<()>
     let event_handler = EventHandler::new(Duration::from_millis(200));
 
     // Just propagate any error from run_app
-    run_app(&mut terminal, app, &event_handler)
+    #[allow(
+        clippy::needless_return,
+        reason = "Explicit return for readability; the implicit return might \
+                  look accidental."
+    )]
+    return run_app(&mut terminal, app, &event_handler);
 }
 
 /// Run the main loop
@@ -143,7 +148,7 @@ fn main() -> Result<()>
 /// # Errors
 ///
 /// Returns an error if the terminal fails to draw to the screen.
-#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_lines, reason = "Keybindings are verbose")]
 fn run_app<T: RatatuiBackend>(
     terminal: &mut Terminal<T>,
     mut app: App,
@@ -199,14 +204,16 @@ fn run_app<T: RatatuiBackend>(
                 {
                     app.scroll_up(terminal.size()?.height.into());
                 },
-
+                // Whole document scroll
                 (AppMode::Normal, KeyCode::Char('g')) =>
                 {
-                    app.scroll_up(app.rfc_content.len());
+                    // Use total line count instead of the byte count of the
+                    // document
+                    app.scroll_up(app.rfc_line_number);
                 },
                 (AppMode::Normal, KeyCode::Char('G')) =>
                 {
-                    app.scroll_down(app.rfc_content.len());
+                    app.scroll_down(app.rfc_line_number);
                 },
 
                 // Search handling

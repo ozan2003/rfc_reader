@@ -205,7 +205,8 @@ pub mod parsing
     });
 
     static SECTION_HEADING_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"^\d+\.\s+\w+").expect("Invalid section heading regex")
+        Regex::new(r"^(\d+(?:\.\d+)*\.)\s+\S")
+            .expect("Invalid section heading regex")
     });
 
     /// Parses the document by existing `ToC`.
