@@ -1,6 +1,6 @@
 //! Provides a RAII guard for safe terminal lifecycle management.
 //!
-//! This module leverages the RAII (Resource Acquisition Is Initialization)
+//! This module uses the RAII (Resource Acquisition Is Initialization)
 //! pattern to manage the terminal state.
 //!
 //! A guard object is created to initialize the TUI,
