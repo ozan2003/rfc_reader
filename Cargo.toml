@@ -80,3 +80,8 @@ get_unwrap = { level = "warn", priority = 0 }
 mem_forget = { level = "warn", priority = 0 }
 use_self = { level = "warn", priority = 0 }
 useless_let_if_seq = { level = "warn", priority = 0 }
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
