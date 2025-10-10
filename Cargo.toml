@@ -48,15 +48,6 @@ ureq = { version = "3.1.0", default-features = false, features = [
 [dev-dependencies]
 tempfile = "3.21.0"
 
-[profile.release]
-lto = true
-strip = true
-opt-level = 3
-codegen-units = 1
-panic = "abort"
-debug = false
-incremental = false
-
 [lints.clippy]
 correctness = { level = "forbid", priority = -1 }
 perf = { level = "forbid", priority = -2 }
