@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{ArgAction, ArgGroup, Command, arg, crate_version};
-use crossterm::event::{KeyCode, KeyEventKind};
+use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use log::{debug, error, info};
 use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
@@ -234,6 +234,18 @@ fn run_app<T: RatatuiBackend>(
                 {
                     app.remove_search_char();
                 },
+                // Ctrl + c toggles case sensitive mode
+                (AppMode::Search, KeyCode::Char('c'))
+                    if key.modifiers == KeyModifiers::CONTROL =>
+                {
+                    app.toggle_case_sensitivity();
+                },
+                // Ctrl + r toggles regex mode
+                (AppMode::Search, KeyCode::Char('r'))
+                    if key.modifiers == KeyModifiers::CONTROL =>
+                {
+                    app.toggle_regex_mode();
+                },
                 (AppMode::Search, KeyCode::Char(ch)) =>
                 {
                     app.add_search_char(ch);
@@ -257,21 +269,21 @@ fn run_app<T: RatatuiBackend>(
                 (AppMode::Normal, KeyCode::Char('w'))
                     if app
                         .app_state
-                        .contains(AppStateFlags::SHOW_TOC) =>
+                        .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
                 {
                     app.rfc_toc_panel.previous();
                 },
                 (AppMode::Normal, KeyCode::Char('s'))
                     if app
                         .app_state
-                        .contains(AppStateFlags::SHOW_TOC) =>
+                        .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
                 {
                     app.rfc_toc_panel.next();
                 },
                 (AppMode::Normal, KeyCode::Enter)
                     if app
                         .app_state
-                        .contains(AppStateFlags::SHOW_TOC) =>
+                        .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
                 {
                     app.jump_to_toc_entry();
                 },

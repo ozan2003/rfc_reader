@@ -1,6 +1,6 @@
 [package]
 name = "rfc_reader"
-version = "0.6.3"
+version = "0.7.0"
 rust-version = "1.88.0"
 edition = "2024"
 description = "A TUI based RFC viewer"
@@ -27,6 +27,7 @@ license-file = "LICENSE"
 [dependencies]
 anyhow = "1.0.99"
 bitflags = "2.9.2"
+cached = "0.56.0"
 clap = { version = "4.5.45", features = ["cargo"] }
 # align with ratatui's crossterm version to not compile crossterm twice
 # i'm only using event handling, no need for the serde, event-stream stuff

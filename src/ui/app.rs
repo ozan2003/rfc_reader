@@ -3,11 +3,13 @@
 //! Provides the central application state and handles UI rendering and user
 //! input. This includes features such as document scrolling, searching,
 //! and navigation.
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::stdout;
 use std::ops::Range;
 
 use bitflags::bitflags;
+use cached::proc_macro::cached;
 use crossterm::execute;
 use crossterm::terminal::{SetTitle, size};
 use log::warn;
@@ -74,9 +76,13 @@ bitflags! {
         /// Application should continue running
         const SHOULD_RUN = 1;
         /// Whether table of contents should be displayed
-        const SHOW_TOC = 1 << 1;
+        const SHOULD_SHOW_TOC = 1 << 1;
         /// Whether search yields no results
         const HAS_NO_RESULTS = 1 << 2;
+        /// Are we searching case-sensitively?
+        const IS_CASE_SENSITIVE = 1 << 3;
+        /// Are we searching with regex?
+        const IS_USING_REGEX = 1 << 4;
     }
 }
 
@@ -327,7 +333,7 @@ impl App
 
         let (content_area, toc_area) = if self
             .app_state
-            .contains(AppStateFlags::SHOW_TOC)
+            .contains(AppStateFlags::SHOULD_SHOW_TOC)
         {
             // Create layout with ToC panel on the left
             let [toc_area, content_area] = Layout::default()
@@ -421,6 +427,8 @@ impl App
             Line::from(""),
             Line::from("/: Search"),
             Line::from("n/N: Next/previous search result"),
+            Line::from("Ctrl+C: Toggle case sensitivity"),
+            Line::from("Ctrl+R: Toggle regex search"),
             Line::from("Esc: Reset search highlights"),
             Line::from(""),
             Line::from("q: Quit"),
@@ -680,21 +688,57 @@ impl App
     /// # Returns
     ///
     /// A string containing the current mode.
-    const fn get_mode_text(&self) -> &'static str
+    fn get_mode_text(&self) -> Cow<'static, str>
     {
         match self.mode
         {
             AppMode::Normal
                 if self
                     .app_state
-                    .contains(AppStateFlags::SHOW_TOC) =>
+                    .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
             {
-                "NORMAL (ToC)"
+                Cow::Borrowed("NORMAL (ToC)")
             },
-            AppMode::Normal => "NORMAL",
-            AppMode::Help => "HELP",
-            AppMode::Search => "SEARCH",
+            AppMode::Normal => Cow::Borrowed("NORMAL"),
+            AppMode::Help => Cow::Borrowed("HELP"),
+            AppMode::Search => Cow::Owned(self.get_search_mode_text()),
         }
+    }
+
+    /// Builds the search mode text for the statusbar.
+    /// Includes case sensitivity and regex flags.
+    ///
+    /// # Returns
+    ///
+    /// A string containing the search mode text.
+    fn get_search_mode_text(&self) -> String
+    {
+        const EMPTY_BOX_CHAR: char = '☐';
+        const CHECKED_BOX_CHAR: char = '☑';
+
+        let case_char = if self
+            .app_state
+            .contains(AppStateFlags::IS_CASE_SENSITIVE)
+        {
+            CHECKED_BOX_CHAR
+        }
+        else
+        {
+            EMPTY_BOX_CHAR
+        };
+
+        let regex_char = if self
+            .app_state
+            .contains(AppStateFlags::IS_USING_REGEX)
+        {
+            CHECKED_BOX_CHAR
+        }
+        else
+        {
+            EMPTY_BOX_CHAR
+        };
+
+        format!("SEARCH | C:{case_char} R:{regex_char}")
     }
 
     /// Builds the progress text for the statusbar.
@@ -769,7 +813,7 @@ impl App
             (AppMode::Normal, _)
                 if self
                     .app_state
-                    .contains(AppStateFlags::SHOW_TOC) =>
+                    .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
             {
                 "t:toggle ToC  w/s:nav  Enter:jump  q:quit"
             },
@@ -842,7 +886,27 @@ impl App
     pub fn toggle_toc(&mut self)
     {
         self.app_state
-            .toggle(AppStateFlags::SHOW_TOC);
+            .toggle(AppStateFlags::SHOULD_SHOW_TOC);
+    }
+
+    /// Toggles case sensitivity for searches.
+    ///
+    /// If case sensitivity is enabled, searches will be case-sensitive.
+    /// If disabled, searches will be case-insensitive.
+    pub fn toggle_case_sensitivity(&mut self)
+    {
+        self.app_state
+            .toggle(AppStateFlags::IS_CASE_SENSITIVE);
+    }
+
+    /// Toggles regex mode for searches.
+    ///
+    /// If regex mode is enabled, searches will interpret the query as a regex
+    /// pattern.
+    pub fn toggle_regex_mode(&mut self)
+    {
+        self.app_state
+            .toggle(AppStateFlags::IS_USING_REGEX);
     }
 
     /// Enters search mode, clearing any previous search.
@@ -899,11 +963,22 @@ impl App
             return;
         }
 
-        let pattern = regex::escape(&self.query_text);
-        // TODO: Could cache the regexes for repeated searches
-        let Ok(regex) = Regex::new(&format!("(?i){pattern}"))
+        let is_case_sensitive = self
+            .app_state
+            .contains(AppStateFlags::IS_CASE_SENSITIVE);
+        let is_regex = self
+            .app_state
+            .contains(AppStateFlags::IS_USING_REGEX);
+
+        let Some(regex) = get_compiled_regex(
+            self.query_text.clone(),
+            is_case_sensitive,
+            is_regex,
+        )
         else
         {
+            self.app_state
+                .insert(AppStateFlags::HAS_NO_RESULTS);
             return;
         };
 
@@ -1079,4 +1154,41 @@ fn centered_rect(
         .flex(Flex::Center)
         .areas(area);
     area
+}
+
+/// Gets a compiled regex for the given query, case sensitivity, and regex mode.
+/// Uses caching to avoid recompiling the same regex multiple times.
+///
+/// # Arguments
+///
+/// * `query` - The search query string
+/// * `is_case_sensitive` - Whether the search is case sensitive
+/// * `is_regex` - Whether the query is a regex
+///
+/// # Returns
+///
+/// A compiled `Regex` if the query is valid, or `None` if invalid.
+#[cached(
+    size = 20,
+    key = "String",
+    convert = r#"{ format!("{}-{}-{}", query, is_case_sensitive, is_regex) }"#
+)]
+fn get_compiled_regex(
+    query: String,
+    is_case_sensitive: bool,
+    is_regex: bool,
+) -> Option<Regex>
+{
+    let pattern = if is_regex
+    {
+        query
+    }
+    else
+    {
+        regex::escape(&query)
+    };
+
+    let case_prefix = if is_case_sensitive { "" } else { "(?i)" };
+
+    Regex::new(&format!("{case_prefix}{pattern}")).ok()
 }
