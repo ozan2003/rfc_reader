@@ -11,6 +11,7 @@ use std::panic::{set_hook, take_hook};
 
 use anyhow::Result;
 use crossterm::ExecutableCommand;
+use crossterm::cursor::{SetCursorStyle, Show};
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
     enable_raw_mode,
@@ -42,8 +43,9 @@ impl TerminalGuard
     /// On failure to enter raw mode or switch screens.
     pub fn new() -> Result<Self>
     {
-        // Setup terminal
+        // Setup terminal and cursor
         enable_raw_mode()?;
+        stdout().execute(SetCursorStyle::BlinkingBar)?;
         stdout().execute(EnterAlternateScreen)?;
         Ok(Self)
     }
@@ -59,6 +61,17 @@ impl Drop for TerminalGuard
     /// returns to the main screen, ensuring a clean terminal state.
     fn drop(&mut self)
     {
+        // Restore the cursor to visible and default style
+        if let Err(err) = stdout().execute(Show)
+        {
+            error!("Failed to show cursor on drop: {err}");
+        }
+
+        if let Err(err) = stdout().execute(SetCursorStyle::DefaultUserShape)
+        {
+            error!("Failed to reset cursor style: {err}");
+        }
+
         // Terminal will be borked when failure, at least inform the user
         if let Err(err) = disable_raw_mode()
         {

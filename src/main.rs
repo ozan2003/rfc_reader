@@ -234,6 +234,27 @@ fn run_app<T: RatatuiBackend>(
                 {
                     app.remove_search_char();
                 },
+                (AppMode::Search, KeyCode::Delete) =>
+                {
+                    app.delete_search_char();
+                },
+                // Cursor navigation
+                (AppMode::Search, KeyCode::Left) =>
+                {
+                    app.move_search_cursor_left();
+                },
+                (AppMode::Search, KeyCode::Right) =>
+                {
+                    app.move_search_cursor_right();
+                },
+                (AppMode::Search, KeyCode::Home) =>
+                {
+                    app.move_search_cursor_home();
+                },
+                (AppMode::Search, KeyCode::End) =>
+                {
+                    app.move_search_cursor_end();
+                },
                 // Ctrl + c toggles case sensitive mode
                 (AppMode::Search, KeyCode::Char('c'))
                     if key.modifiers == KeyModifiers::CONTROL =>

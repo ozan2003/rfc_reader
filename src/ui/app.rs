@@ -10,6 +10,7 @@ use std::ops::Range;
 
 use bitflags::bitflags;
 use cached::proc_macro::cached;
+use crossterm::cursor::{Hide, Show};
 use crossterm::execute;
 use crossterm::terminal::{SetTitle, size};
 use log::warn;
@@ -136,6 +137,8 @@ pub struct App
     // Search
     /// Text of the query to search.
     pub query_text: String,
+    /// Cursor position in the search text (byte index)
+    pub query_cursor_pos: usize,
     /// Line numbers where query matches were found.
     pub query_match_line_nums: Vec<LineNumber>,
     /// Index of the currently selected query match.
@@ -457,6 +460,14 @@ impl App
     /// * `frame` - The frame to render the search box to
     fn render_search(&self, frame: &mut Frame)
     {
+        /// Search prompt prefix.
+        const SEARCH_PROMPT: &str = "/";
+        /// Prefix length for the search prompt ("/").
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "Terminal width is excpected to fit in u16 bounds"
+        )]
+        const SEARCH_PREFIX_LENGTH: u16 = SEARCH_PROMPT.len() as _;
         /// Search box height in rows.
         const SEARCH_BOX_HEIGHT_ROWS: u16 = 3;
         /// Horizontal start position divisor (x = width /
@@ -467,6 +478,8 @@ impl App
         const SEARCH_BOX_WIDTH_DIVISOR: u16 = 2;
         /// Distance from bottom in rows.
         const SEARCH_BOX_BOTTOM_OFFSET_ROWS: u16 = 4;
+        /// Border width for cursor position calculation.
+        const SEARCH_BOX_BORDER_WIDTH: u16 = 1;
 
         let area = Rect::new(
             frame.area().width / SEARCH_BOX_X_DIVISOR,
@@ -481,7 +494,7 @@ impl App
         // Clear the area first to make it fully opaque
         frame.render_widget(Clear, area);
 
-        let text = Text::from(format!("/{}", self.query_text));
+        let text = Text::from(format!("{}{}", SEARCH_PROMPT, self.query_text));
 
         let search_box = Paragraph::new(text)
             .block(
@@ -493,6 +506,27 @@ impl App
             .style(Style::default());
 
         frame.render_widget(search_box, area);
+
+        // Calculate cursor position
+        // The cursor should be after the "/" prefix and at the current position
+        // in the query text
+        let cursor_x = area
+            .x
+            .saturating_add(SEARCH_BOX_BORDER_WIDTH)
+            .saturating_add(SEARCH_PREFIX_LENGTH)
+            .saturating_add(
+                self.query_text
+                    .get(..self.query_cursor_pos)
+                    .map_or(0, |before_cursor| before_cursor.chars().count())
+                    .try_into()
+                    .unwrap_or(0),
+            );
+        let cursor_y = area
+            .y
+            .saturating_add(SEARCH_BOX_BORDER_WIDTH);
+
+        // Set cursor position
+        frame.set_cursor_position((cursor_x, cursor_y));
     }
 
     /// Renders the no search results message.
@@ -914,12 +948,25 @@ impl App
     {
         self.mode = AppMode::Search;
         self.query_text.clear(); // Start with an empty search
+        self.query_cursor_pos = 0;
+
+        // Show cursor when entering search mode
+        if let Err(error) = execute!(stdout(), Show)
+        {
+            warn!("Failed to show cursor: {error}");
+        }
     }
 
     /// Exits search mode and returns to normal mode.
-    pub const fn exit_search_mode(&mut self)
+    pub fn exit_search_mode(&mut self)
     {
         self.mode = AppMode::Normal;
+
+        // Hide cursor when exiting search mode
+        if let Err(error) = execute!(stdout(), Hide)
+        {
+            warn!("Failed to hide cursor: {error}");
+        }
     }
 
     /// Checks if there are any search results.
@@ -932,20 +979,79 @@ impl App
         !self.query_text.is_empty() && !self.query_match_line_nums.is_empty()
     }
 
-    /// Adds a character to the search text.
+    /// Adds a character to the search text at cursor position.
     ///
     /// # Arguments
     ///
     /// * `ch` - The character to add
     pub fn add_search_char(&mut self, ch: char)
     {
-        self.query_text.push(ch);
+        self.query_text
+            .insert(self.query_cursor_pos, ch);
+        self.query_cursor_pos = self
+            .query_cursor_pos
+            .saturating_add(ch.len_utf8());
     }
 
-    /// Removes the last character from the search text.
+    /// Removes the character before the cursor in the search text.
     pub fn remove_search_char(&mut self)
     {
-        self.query_text.pop();
+        if self.query_cursor_pos > 0
+        {
+            self.move_search_cursor_left();
+            self.delete_search_char();
+        }
+    }
+
+    /// Deletes the character front of the cursor in the search text.
+    pub fn delete_search_char(&mut self)
+    {
+        if self.query_cursor_pos < self.query_text.len()
+        {
+            self.query_text.remove(self.query_cursor_pos);
+        }
+    }
+
+    /// Moves the search cursor left by one character.
+    pub fn move_search_cursor_left(&mut self)
+    {
+        if self.query_cursor_pos > 0
+        {
+            // Find the previous character boundary
+            let mut pos = self.query_cursor_pos.saturating_sub(1);
+            while pos > 0 && !self.query_text.is_char_boundary(pos)
+            {
+                pos = pos.saturating_sub(1);
+            }
+            self.query_cursor_pos = pos;
+        }
+    }
+
+    /// Moves the search cursor right by one character.
+    pub fn move_search_cursor_right(&mut self)
+    {
+        if self.query_cursor_pos < self.query_text.len()
+        {
+            let mut pos = self.query_cursor_pos.saturating_add(1);
+            while pos < self.query_text.len() &&
+                !self.query_text.is_char_boundary(pos)
+            {
+                pos = pos.saturating_add(1);
+            }
+            self.query_cursor_pos = pos;
+        }
+    }
+
+    /// Moves the search cursor to the start of the text.
+    pub const fn move_search_cursor_home(&mut self)
+    {
+        self.query_cursor_pos = 0;
+    }
+
+    /// Moves the search cursor to the end of the text.
+    pub const fn move_search_cursor_end(&mut self)
+    {
+        self.query_cursor_pos = self.query_text.len();
     }
 
     /// Performs a search using the current search text.
@@ -1119,6 +1225,7 @@ impl Default for App
             app_state: AppStateFlags::default(),
             guard,
             query_text: String::with_capacity(QUERY_TEXT_INITIAL_CAPACITY),
+            query_cursor_pos: 0,
             query_match_line_nums: Vec::with_capacity(
                 QUERY_RESULTS_INITIAL_CAPACITY,
             ),

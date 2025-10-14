@@ -1,6 +1,6 @@
 [package]
 name = "rfc_reader"
-version = "0.7.0"
+version = "0.8.0"
 rust-version = "1.88.0"
 edition = "2024"
 description = "A TUI based RFC viewer"
