@@ -8,7 +8,7 @@ use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::cache::RfcCache;
 use rfc_reader::client::RfcClient;
-use rfc_reader::logging::{LOG_FILE_PATH, clear_log_file, init_logging};
+use rfc_reader::logging::{clear_log_file, get_log_file_path, init_logging};
 use rfc_reader::ui::guard::{init_panic_hook, init_tui};
 use rfc_reader::ui::{App, AppMode, AppStateFlags, Event, EventHandler};
 
@@ -30,7 +30,7 @@ fn main() -> Result<()>
              stored in the following directory: {}\n\nThe location of the log \
              file is: {}",
             cache.cache_dir().display(),
-            LOG_FILE_PATH.display()
+            get_log_file_path().display()
         ))
         // These args are irrelevant to `rfc`.
         .group(ArgGroup::new("maintenance").args([
@@ -55,7 +55,7 @@ fn main() -> Result<()>
         ])
         .get_matches();
 
-    // Clear cache if requested
+    // Handle maintenance actions: clear cache, clear log, list cached RFCs
     if matches.get_flag("clear-cache")
     {
         cache.clear()?;
@@ -70,6 +70,7 @@ fn main() -> Result<()>
     }
     else if matches.get_flag("list")
     {
+        // Print the list of all cached RFCs one per line
         cache.print_list();
         return Ok(());
     }
