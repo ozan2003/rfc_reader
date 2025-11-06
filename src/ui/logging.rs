@@ -2,7 +2,7 @@
 //!
 //! Handles the initialization and configuration of the application's
 //! logging system.
-use std::fs::{File, create_dir_all, remove_file};
+use std::fs::{OpenOptions, create_dir_all, read_dir, remove_file};
 use std::io::Write;
 use std::path::Path;
 use std::sync::LazyLock;
@@ -10,7 +10,14 @@ use std::sync::LazyLock;
 use anyhow::{Context, Result};
 use directories::BaseDirs;
 use env_logger::{Builder, Target};
+use file_rotate::compression::Compression;
+use file_rotate::suffix::AppendCount;
+use file_rotate::{ContentLimit, FileRotate};
 use log::LevelFilter;
+
+const LOG_FILE_SIZE: usize = 5 * 1024 * 1024; // 5MB
+const MAX_LOG_FILE_COUNT: usize = 5;
+const UNCOMPRESSED_LOG_FILE_COUNT: usize = 2;
 
 // This is where the log file will be stored.
 static LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
@@ -49,12 +56,30 @@ pub fn get_log_file_path() -> &'static Path
 /// Returns an error if the log file cannot be opened or created.
 pub fn init_logging() -> Result<()>
 {
+    // static assertion to prevent skill issues in the future
+    const {
+        assert!(
+            UNCOMPRESSED_LOG_FILE_COUNT < MAX_LOG_FILE_COUNT,
+            "How can we compress more file than we have right now?"
+        );
+    }
+
     let log_path = get_log_file_path();
 
-    let log_file = File::options()
-        .append(true)
-        .create(true)
-        .open(log_path)?;
+    let log_open_option = {
+        let mut option = OpenOptions::new();
+        option.read(true).create(true).append(true);
+
+        option
+    };
+
+    let rotator = FileRotate::new(
+        log_path,
+        AppendCount::new(MAX_LOG_FILE_COUNT),
+        ContentLimit::Bytes(LOG_FILE_SIZE),
+        Compression::OnRotate(UNCOMPRESSED_LOG_FILE_COUNT),
+        Some(log_open_option),
+    );
 
     let mut builder = Builder::new();
     builder
@@ -71,7 +96,7 @@ pub fn init_logging() -> Result<()>
                 record.args()
             )
         })
-        .target(Target::Pipe(Box::new(log_file)));
+        .target(Target::Pipe(Box::new(rotator)));
 
     builder
         .try_init()
@@ -96,9 +121,29 @@ pub fn clear_log_file() -> Result<()>
 {
     let log_path = get_log_file_path();
 
-    if log_path.exists()
+    if let Some(dir) = log_path.parent() &&
+        let Some(log_name) = log_path.file_name().and_then(|s| s.to_str())
     {
-        remove_file(log_path)?;
+        for entry in read_dir(dir).context("Failed to read log directory")?
+        {
+            let path = entry?.path();
+
+            if !path.is_file()
+            {
+                continue;
+            }
+
+            let Some(name) = path.file_name().and_then(|s| s.to_str())
+            else
+            {
+                continue;
+            };
+
+            if name == log_name || name.starts_with(&format!("{log_name}."))
+            {
+                remove_file(path).context("Failed to remove log file")?;
+            }
+        }
     }
     Ok(())
 }
