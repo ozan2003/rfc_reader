@@ -4,7 +4,7 @@
 //! logging system.
 use std::fs::{File, create_dir_all, remove_file};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::LazyLock;
 
 use anyhow::{Context, Result};
@@ -13,7 +13,7 @@ use env_logger::{Builder, Target};
 use log::LevelFilter;
 
 // This is where the log file will be stored.
-static LOG_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
+static LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
     let base_dirs =
         BaseDirs::new().expect("Failed to determine base directories");
     let log_dir_path = base_dirs.cache_dir().to_path_buf();
@@ -23,7 +23,9 @@ static LOG_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
         create_dir_all(&log_dir_path).expect("Failed to create log directory");
     }
 
-    log_dir_path.join(concat!(env!("CARGO_PKG_NAME"), ".log"))
+    log_dir_path
+        .join(concat!(env!("CARGO_PKG_NAME"), ".log"))
+        .into_boxed_path()
 });
 
 /// Returns the path to the log file.
@@ -34,7 +36,7 @@ static LOG_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
 #[must_use]
 pub fn get_log_file_path() -> &'static Path
 {
-    LOG_FILE_PATH.as_path()
+    &LOG_FILE_PATH
 }
 
 /// Initializes the logging system for the application.
