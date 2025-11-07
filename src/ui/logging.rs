@@ -23,11 +23,25 @@ const UNCOMPRESSED_LOG_FILE_COUNT: usize = 2;
 static LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
     let base_dirs =
         BaseDirs::new().expect("Failed to determine base directories");
-    let log_dir_path = base_dirs.cache_dir().to_path_buf();
+
+    let log_dir_path = if cfg!(target_os = "linux")
+    {
+        // SAFETY: This block is only executed if we are using Linux,
+        // as the function only returns 'Some' here.
+        unsafe {
+            // Use `$XDG_STATE_HOME` on linux as its stated
+            // on XDG Base Directory Specification.
+            base_dirs.state_dir().unwrap_unchecked()
+        }
+    }
+    else
+    {
+        base_dirs.data_local_dir()
+    };
 
     if !log_dir_path.exists()
     {
-        create_dir_all(&log_dir_path).expect("Failed to create log directory");
+        create_dir_all(log_dir_path).expect("Failed to create log directory");
     }
 
     log_dir_path
