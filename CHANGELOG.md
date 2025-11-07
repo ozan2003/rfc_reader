@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change log file path to use `$XDG_STATE_HOME` on Linux in [logging.rs](src/ui/logging.rs)
 - Use `&Path` instead of `PathBuf` in [logging.rs](src/ui/logging.rs)
+- Change log files location to local data directory on non-Linux platforms in [logging.rs](src/ui/logging.rs)
 
 ## [0.9.1] - 2025-11-07
 
