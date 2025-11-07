@@ -103,21 +103,21 @@ pub fn init_logging() -> Result<()>
         .context("Failed to initialize logger")
 }
 
-/// Removes the log file.
+/// Removes the log files.
 ///
 /// # Returns
 ///
-/// Returns `Ok(())` if the file was successfully removed or didn't exist.
-/// Returns an error if the file exists but couldn't be removed.
+/// Returns `Ok(())` if the files were successfully removed or didn't exist.
+/// Returns an error if the files exist but couldn't be removed.
 ///
 /// # Panics
 ///
-/// Panics if the log file path cannot be locked.
+/// Panics if the log files path cannot be locked.
 ///
 /// # Errors
 ///
-/// Returns an error if the file exists but couldn't be removed.
-pub fn clear_log_file() -> Result<()>
+/// Returns an error if the files exist but couldn't be removed.
+pub fn clear_log_files() -> Result<()>
 {
     let log_path = get_log_file_path();
 

@@ -8,7 +8,7 @@ use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::cache::RfcCache;
 use rfc_reader::client::RfcClient;
-use rfc_reader::logging::{clear_log_file, get_log_file_path, init_logging};
+use rfc_reader::logging::{clear_log_files, get_log_file_path, init_logging};
 use rfc_reader::ui::guard::{init_panic_hook, init_tui};
 use rfc_reader::ui::{App, AppMode, AppStateFlags, Event, EventHandler};
 
@@ -28,14 +28,14 @@ fn main() -> Result<()>
         .after_help(format!(
             "This program caches RFCs to improve performance.\nThe cache is \
              stored in the following directory: {}\n\nThe location of the log \
-             file is: {}",
+             files is: {}",
             cache.cache_dir().display(),
             get_log_file_path().display()
         ))
         // These args are irrelevant to `rfc`.
         .group(ArgGroup::new("maintenance").args([
             "clear-cache",
-            "clear-log",
+            "clear-logs",
             "list",
         ]))
         .args([
@@ -48,7 +48,8 @@ fn main() -> Result<()>
                 .conflicts_with("maintenance"),
             arg!(--"clear-cache" "Clear the RFC cache")
                 .action(ArgAction::SetTrue),
-            arg!(--"clear-log" "Clear the log file").action(ArgAction::SetTrue),
+            arg!(--"clear-logs" "Clear the log files")
+                .action(ArgAction::SetTrue),
             arg!(-o --offline "Run in offline mode (only load cached RFCs)")
                 .action(ArgAction::SetTrue),
             arg!(-l --list "List all cached RFCs").action(ArgAction::SetTrue),
@@ -62,10 +63,10 @@ fn main() -> Result<()>
         println!("Cache cleared successfully");
         return Ok(());
     }
-    else if matches.get_flag("clear-log")
+    else if matches.get_flag("clear-logs")
     {
-        clear_log_file()?;
-        println!("Log file cleared successfully");
+        clear_log_files()?;
+        println!("Log files cleared successfully");
         return Ok(());
     }
     else if matches.get_flag("list")
