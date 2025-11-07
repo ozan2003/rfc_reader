@@ -4,7 +4,7 @@
 ![Rust](https://img.shields.io/badge/language-Rust-orange?logo=rust)
 [![Stars](https://img.shields.io/github/stars/ozan2003/rfc_reader)](https://github.com/ozan2003/rfc_reader/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/ozan2003/rfc_reader)](https://github.com/ozan2003/rfc_reader/commits/master)
-[![Lines of Code](https://tokei.rs/b1/github/ozan2003/rfc_reader?style=flat)](https://github.com/ozan2003/rfc_reader?=style=flat)
+<!--[![Lines of Code](https://tokei.rs/b1/github/ozan2003/rfc_reader?style=flat)](https://github.com/ozan2003/rfc_reader?=style=flat)-->
 [![Code Size](https://img.shields.io/github/languages/code-size/ozan2003/rfc_reader)](https://github.com/ozan2003/rfc_reader)
 [![dependency status](https://deps.rs/repo/github/ozan2003/rfc_reader/status.svg?path=.)](https://deps.rs/repo/github/ozan2003/rfc_reader?path=.)
 ![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-000?logo=ratatui&logoColor=fff)
