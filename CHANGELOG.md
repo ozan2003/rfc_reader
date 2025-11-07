@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-11-07
+
+## Fixed
+
+- The log files directories are now removed when clearing the log files in [logging.rs](src/ui/logging.rs)
+
+## Changed
+
+- Add additional `logs` directory to the log files directory path in [logging.rs](src/ui/logging.rs)
+- Change log file path to use the new `logs` directory in [logging.rs](src/ui/logging.rs)
+
 ## [0.10.0] - 2025-11-07
 
 ## Changed

@@ -8,7 +8,9 @@ use ratatui::Terminal;
 use ratatui::backend::Backend as RatatuiBackend;
 use rfc_reader::cache::RfcCache;
 use rfc_reader::client::RfcClient;
-use rfc_reader::logging::{clear_log_files, get_log_file_path, init_logging};
+use rfc_reader::logging::{
+    clear_log_files, get_log_files_dir_path, init_logging,
+};
 use rfc_reader::ui::guard::{init_panic_hook, init_tui};
 use rfc_reader::ui::{App, AppMode, AppStateFlags, Event, EventHandler};
 
@@ -27,10 +29,10 @@ fn main() -> Result<()>
         // Inform about the cache and log directory
         .after_help(format!(
             "This program caches RFCs to improve performance.\nThe cache is \
-             stored in the following directory: {}\n\nThe location of the log \
-             files is: {}",
+             stored in the following directory: {}\n\nThe the log files are \
+             stored in: {}",
             cache.cache_dir().display(),
-            get_log_file_path().display()
+            get_log_files_dir_path().display()
         ))
         // These args are irrelevant to `rfc`.
         .group(ArgGroup::new("maintenance").args([

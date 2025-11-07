@@ -2,12 +2,12 @@
 //!
 //! Handles the initialization and configuration of the application's
 //! logging system.
-use std::fs::{OpenOptions, create_dir_all, read_dir, remove_file};
+use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 use std::sync::LazyLock;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use directories::BaseDirs;
 use env_logger::{Builder, Target};
 use file_rotate::compression::Compression;
@@ -19,12 +19,12 @@ const LOG_FILE_SIZE: usize = 5 * 1024 * 1024; // 5MB
 const MAX_LOG_FILE_COUNT: usize = 5;
 const UNCOMPRESSED_LOG_FILE_COUNT: usize = 2;
 
-// This is where the log file will be stored.
-static LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
+/// This is directory where the log files will be stored.
+static LOG_FILES_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
     let base_dirs =
         BaseDirs::new().expect("Failed to determine base directories");
 
-    let log_dir_path = if cfg!(target_os = "linux")
+    let base_path = if cfg!(target_os = "linux")
     {
         // SAFETY: This block is only executed if we are using Linux,
         // as the function only returns 'Some' here.
@@ -39,15 +39,37 @@ static LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
         base_dirs.data_local_dir()
     };
 
-    if !log_dir_path.exists()
-    {
-        create_dir_all(log_dir_path).expect("Failed to create log directory");
-    }
+    fs::create_dir_all(base_path).expect("Failed to create base directory");
 
-    log_dir_path
+    // Use a dedicated directory for logs
+    let logs_dir_path = base_path
+        .join(env!("CARGO_PKG_NAME"))
+        .join("logs");
+
+    fs::create_dir_all(&logs_dir_path).expect("Failed to create log directory");
+
+    logs_dir_path.into_boxed_path()
+});
+
+/// Base log file path inside the logs directory.
+///
+/// Formatted as: `<package-name>.log`
+static BASE_LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
+    get_log_files_dir_path()
         .join(concat!(env!("CARGO_PKG_NAME"), ".log"))
         .into_boxed_path()
 });
+
+/// Returns the path to the directory where the log files are stored.
+///
+/// # Returns
+///
+/// A static `Path` reference to the log files directory path.
+#[must_use]
+pub fn get_log_files_dir_path() -> &'static Path
+{
+    &LOG_FILES_PATH
+}
 
 /// Returns the path to the log file.
 ///
@@ -55,9 +77,9 @@ static LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
 ///
 /// A static `Path` reference to the log file path.
 #[must_use]
-pub fn get_log_file_path() -> &'static Path
+fn get_base_log_file_path() -> &'static Path
 {
-    &LOG_FILE_PATH
+    &BASE_LOG_FILE_PATH
 }
 
 /// Initializes the logging system for the application.
@@ -78,7 +100,7 @@ pub fn init_logging() -> Result<()>
         );
     }
 
-    let log_path = get_log_file_path();
+    let base_log_file_path = get_base_log_file_path();
 
     let log_open_option = {
         let mut option = OpenOptions::new();
@@ -87,8 +109,9 @@ pub fn init_logging() -> Result<()>
         option
     };
 
+    // Files are rotated as `<package-name>.log.<count>`
     let rotator = FileRotate::new(
-        log_path,
+        base_log_file_path,
         AppendCount::new(MAX_LOG_FILE_COUNT),
         ContentLimit::Bytes(LOG_FILE_SIZE),
         Compression::OnRotate(UNCOMPRESSED_LOG_FILE_COUNT),
@@ -124,40 +147,57 @@ pub fn init_logging() -> Result<()>
 /// Returns `Ok(())` if the files were successfully removed or didn't exist.
 /// Returns an error if the files exist but couldn't be removed.
 ///
-/// # Panics
-///
-/// Panics if the log files path cannot be locked.
-///
 /// # Errors
 ///
 /// Returns an error if the files exist but couldn't be removed.
 pub fn clear_log_files() -> Result<()>
 {
-    let log_path = get_log_file_path();
+    let log_files_path = get_log_files_dir_path();
 
-    if let Some(dir) = log_path.parent() &&
-        let Some(log_name) = log_path.file_name().and_then(|s| s.to_str())
+    if !log_files_path.exists()
     {
-        for entry in read_dir(dir).context("Failed to read log directory")?
+        return Ok(());
+    }
+
+    let Some(base_log_name) = get_base_log_file_path()
+        .file_name()
+        .and_then(|s| s.to_str())
+    else
+    {
+        bail!("Failed to get log file name");
+    };
+
+    for entry in fs::read_dir(log_files_path)
+        .context("Failed to read log files directory")?
+    {
+        let path = entry?.path();
+
+        if !path.is_file()
         {
-            let path = entry?.path();
+            continue;
+        }
 
-            if !path.is_file()
-            {
-                continue;
-            }
+        let Some(name) = path.file_name().and_then(|s| s.to_str())
+        else
+        {
+            continue;
+        };
 
-            let Some(name) = path.file_name().and_then(|s| s.to_str())
-            else
-            {
-                continue;
-            };
-
-            if name == log_name || name.starts_with(&format!("{log_name}."))
-            {
-                remove_file(path).context("Failed to remove log file")?;
-            }
+        if name == base_log_name ||
+            name.strip_prefix(base_log_name)
+                .is_some_and(|s| s.starts_with('.'))
+        {
+            fs::remove_file(path).context("Failed to remove log file")?;
         }
     }
+
+    // Remove logs directory if empty, then app directory if it also
+    // became empty.
+    if fs::remove_dir(log_files_path).is_ok() &&
+        let Some(app_dir) = log_files_path.parent()
+    {
+        let _ = fs::remove_dir(app_dir);
+    }
+
     Ok(())
 }
