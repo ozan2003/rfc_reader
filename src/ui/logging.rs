@@ -2,6 +2,15 @@
 //!
 //! Handles the initialization and configuration of the application's
 //! logging system.
+//!
+//! ## File Rotation
+//!
+//! - The log files are rotated as `<package-name>.log.<count>`.
+//! - Log files exceeding 5 MiB are rotated.
+//! - Uncompressed log files are kept for at most `UNCOMPRESSED_LOG_FILE_COUNT`
+//!   files.
+//! - Compressed log files are deleted when the number of log files exceeds
+//!   `MAX_LOG_FILE_COUNT`.
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -15,8 +24,11 @@ use file_rotate::suffix::AppendCount;
 use file_rotate::{ContentLimit, FileRotate};
 use log::LevelFilter;
 
-const LOG_FILE_SIZE: usize = 5 * 1024 * 1024; // 5MB
+/// Maximum size of a log file in bytes.
+const LOG_FILE_SIZE: usize = 5 * 1024 * 1024; // 5 MiB
+/// Maximum number of log files to keep.
 const MAX_LOG_FILE_COUNT: usize = 5;
+/// Maximum number of uncompressed log files to keep.
 const UNCOMPRESSED_LOG_FILE_COUNT: usize = 2;
 
 /// This is directory where the log files will be stored.
