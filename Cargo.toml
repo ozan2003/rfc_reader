@@ -31,7 +31,7 @@ cached = "0.56.0"
 clap = { version = "4.5.45", features = ["cargo"] }
 # align with ratatui's crossterm version to not compile crossterm twice
 # i'm only using event handling, no need for the serde, event-stream stuff
-crossterm = { version = "0.28.1", default-features = false, features = [
+crossterm = { version = "=0.28.1", default-features = false, features = [
     "events",
 ] }
 directories = "6.0.0"
@@ -81,6 +81,7 @@ get_unwrap = { level = "warn", priority = 0 }
 mem_forget = { level = "warn", priority = 0 }
 use_self = { level = "warn", priority = 0 }
 useless_let_if_seq = { level = "warn", priority = 0 }
+str_to_string = { level = "warn", priority = 0 }
 
 # The profile that 'dist' will build with
 [profile.dist]
