@@ -101,7 +101,7 @@ fn get_base_log_file_path() -> &'static Path
 ///
 /// # Errors
 ///
-/// Returns an error if the log file cannot be opened or created.
+/// Returns an error if the logging system cannot be initialized.
 pub fn init_logging() -> Result<()>
 {
     // static assertion to prevent skill issues in the future
