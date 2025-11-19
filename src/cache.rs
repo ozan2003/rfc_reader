@@ -365,8 +365,6 @@ mod tests
         // Verify the directory has been removed
         assert!(!cache_dir.exists());
 
-        // The temp_dir will be automatically cleaned up when it goes out of
-        // scope
         Ok(())
     }
 
@@ -377,7 +375,6 @@ mod tests
         let temp_dir = TempDir::new()?;
         let cache_dir = temp_dir.path();
 
-        // Create an instance of your struct with the temp directory
         let cache = RfcCache {
             cache_dir: cache_dir.into(),
         };
@@ -422,6 +419,33 @@ mod tests
 
         // The subdirectory should be removed
         assert!(!subdir_path.exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_rfc_round_trip() -> Result<()>
+    {
+        let temp_dir = TempDir::new()?;
+        let cache = RfcCache {
+            cache_dir: temp_dir.path().into(),
+        };
+
+        let rfc_number = 1234;
+        let content = "RFC Content Test";
+
+        // Cache the bogus RFC
+        cache.cache_rfc(rfc_number, content)?;
+
+        // Verify file exists on disk
+        let expected_path = temp_dir
+            .path()
+            .join(format!("rfc{rfc_number}.txt"));
+        assert!(expected_path.exists());
+
+        // Retrieve the bogus RFC
+        let cached_content = cache.get_cached_rfc(rfc_number)?;
+        assert_eq!(cached_content.as_ref(), content);
 
         Ok(())
     }
