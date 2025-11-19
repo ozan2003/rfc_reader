@@ -20,7 +20,7 @@ fn main() -> Result<()>
     init_logging()?;
 
     // Initialize cache
-    let cache = RfcCache::new()?;
+    let cache = RfcCache::new().context("Failed to initialize cache")?;
 
     // Parse command line arguments
     let matches = Command::new("rfc_reader")
