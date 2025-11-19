@@ -3,7 +3,7 @@
 //! Stores document content on disk to minimize redundant network requests.
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::Path;
 
 use anyhow::{Context, Result, bail};
 use directories::ProjectDirs;
@@ -15,7 +15,7 @@ use directories::ProjectDirs;
 pub struct RfcCache
 {
     /// Directory where cache files are stored
-    cache_dir: PathBuf,
+    cache_dir: Box<Path>,
 }
 
 impl RfcCache
@@ -37,12 +37,14 @@ impl RfcCache
         let project_dirs = ProjectDirs::from("", "", env!("CARGO_PKG_NAME"))
             .context("Failed to determine project directories")?;
 
-        let cache_dir = project_dirs.cache_dir().to_path_buf();
+        let cache_dir = project_dirs.cache_dir();
         // Create if cache_dir doesn't exist.
-        fs::create_dir_all(&cache_dir)
+        fs::create_dir_all(cache_dir)
             .context("Failed to create cache directory")?;
 
-        Ok(Self { cache_dir })
+        Ok(Self {
+            cache_dir: cache_dir.into(),
+        })
     }
 
     /// Retrieves an RFC from the cache.
@@ -178,10 +180,11 @@ impl RfcCache
     /// # Returns
     ///
     /// The path where the RFC should be cached
-    fn format_cache_path(&self, rfc_number: u16) -> PathBuf
+    fn format_cache_path(&self, rfc_number: u16) -> Box<Path>
     {
         self.cache_dir
             .join(format!("rfc{rfc_number}.txt"))
+            .into_boxed_path()
     }
 
     /// Gets the file path for the RFC index in the cache.
@@ -189,9 +192,11 @@ impl RfcCache
     /// # Returns
     ///
     /// The path where the RFC index should be cached
-    fn get_index_cache_path(&self) -> PathBuf
+    fn get_index_cache_path(&self) -> Box<Path>
     {
-        self.cache_dir.join("rfc-index.txt")
+        self.cache_dir
+            .join("rfc-index.txt")
+            .into_boxed_path()
     }
 
     /// Clears all cached RFCs and the index.
@@ -254,7 +259,7 @@ impl RfcCache
     ///
     /// The cache directory.
     #[must_use]
-    pub const fn cache_dir(&self) -> &PathBuf
+    pub const fn cache_dir(&self) -> &Path
     {
         &self.cache_dir
     }
@@ -327,14 +332,14 @@ mod tests
     {
         // Create a temporary directory for testing
         let temp_dir = TempDir::new()?;
-        let cache_dir = temp_dir.path().to_path_buf();
+        let cache_dir = temp_dir.path();
 
-        // Create an instance.
+        // Bypass the ctor for the temp dir.
         let cache = RfcCache {
-            cache_dir: cache_dir.clone(),
+            cache_dir: cache_dir.into(),
         };
 
-        // Create test files in the temporary directory
+        // Create test files in the temp dir
         let file_paths = vec!["file1.txt", "file2.txt", "file3.txt"];
         for file_name in &file_paths
         {
@@ -357,7 +362,7 @@ mod tests
             assert!(!cache_dir.join(file_name).exists());
         }
 
-        // Verify the directory has been removed since it should be empty
+        // Verify the directory has been removed
         assert!(!cache_dir.exists());
 
         // The temp_dir will be automatically cleaned up when it goes out of
@@ -370,11 +375,11 @@ mod tests
     {
         // Create a temporary directory for testing
         let temp_dir = TempDir::new()?;
-        let cache_dir = temp_dir.path().to_path_buf();
+        let cache_dir = temp_dir.path();
 
         // Create an instance of your struct with the temp directory
         let cache = RfcCache {
-            cache_dir: cache_dir.clone(),
+            cache_dir: cache_dir.into(),
         };
 
         // Call the clear function on an empty directory
@@ -391,11 +396,11 @@ mod tests
     {
         // Create a temporary directory for testing
         let temp_dir = TempDir::new()?;
-        let cache_dir = temp_dir.path().to_path_buf();
+        let cache_dir = temp_dir.path();
 
-        // Create an instance of your struct with the temp directory
+        // Create an instance with the temp directory
         let cache = RfcCache {
-            cache_dir: cache_dir.clone(),
+            cache_dir: cache_dir.into(),
         };
 
         // Create a file
@@ -403,7 +408,7 @@ mod tests
         let mut file = File::create(&file_path)?;
         writeln!(file, "test content")?;
 
-        // Create a subdirectory.
+        // Create a subdirectory
         let subdir_path = cache_dir.join("subdir");
         std::fs::create_dir(&subdir_path)?;
 
