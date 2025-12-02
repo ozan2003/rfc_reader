@@ -42,6 +42,10 @@ pub struct EventHandler
 
 impl EventHandler
 {
+    /// Maximum amount of time spent waiting inside `event::poll` so that
+    /// shutdown signals are observed promptly.
+    const MAX_POLL_WAIT: Duration = Duration::from_millis(50);
+
     /// Creates a new event handler with the specified tick rate
     ///
     /// # Arguments
@@ -77,39 +81,55 @@ impl EventHandler
                 }
 
                 // Calculate how long to wait before the next tick
-                // If more time than tick_rate has passed, don't wait at all
-                let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+                // but don't wait longer than `MAX_POLL_WAIT` to ensure
+                // shutdown signals are observed promptly.
+                let timeout = tick_rate
+                    .saturating_sub(last_tick.elapsed())
+                    .min(Self::MAX_POLL_WAIT);
 
                 // Poll for crossterm events, with timeout to ensure we generate
                 // tick events
-                if event::poll(timeout).expect("Error polling events")
+                match event::poll(timeout)
                 {
-                    match event::read().expect("Error reading event")
+                    Ok(true) =>
                     {
-                        // Handle keyboard input
-                        CrosstermEvent::Key(key) =>
+                        match event::read()
                         {
-                            // Break the loop if sending fails (receiver
-                            // dropped)
-                            if event_sender.send(Event::Key(key)).is_err()
+                            Ok(CrosstermEvent::Key(key)) =>
                             {
-                                break;
-                            }
-                        },
-                        // Handle terminal resize events
-                        CrosstermEvent::Resize(width, height) =>
-                        {
-                            if event_sender
-                                .send(Event::Resize(width, height))
-                                .is_err()
+                                if event_sender.send(Event::Key(key)).is_err()
+                                {
+                                    break;
+                                }
+                            },
+                            Ok(CrosstermEvent::Resize(width, height)) =>
                             {
+                                if event_sender
+                                    .send(Event::Resize(width, height))
+                                    .is_err()
+                                {
+                                    break;
+                                }
+                            },
+                            // Ignore other events
+                            Ok(_) =>
+                            {},
+                            Err(err) =>
+                            {
+                                eprintln!(
+                                    "Failed to read terminal event: {err}"
+                                );
                                 break;
-                            }
-                        },
-                        // Ignore other event types
-                        _ =>
-                        {},
-                    }
+                            },
+                        }
+                    },
+                    Ok(false) =>
+                    {},
+                    Err(err) =>
+                    {
+                        eprintln!("Failed to poll terminal events: {err}");
+                        break;
+                    },
                 }
 
                 // Generate tick events for animations and regular updates
