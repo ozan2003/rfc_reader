@@ -37,7 +37,7 @@ crossterm = { version = "=0.28.1", default-features = false, features = [
 directories = "6.0.0"
 env_logger = "0.11.8"
 file-rotate = "0.8.0"
-log = "0.4.28"
+log = "0.4.29"
 ratatui = "0.29.0"
 regex = "1.12.2"
 textwrap = "0.16.2"
