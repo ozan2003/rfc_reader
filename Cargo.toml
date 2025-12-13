@@ -67,7 +67,7 @@ branches_sharing_code = { level = "warn", priority = -9 }
 uninlined-format-args = "allow"
 
 arithmetic_side_effects = { level = "warn", priority = 0 }
-unchecked_duration_subtraction = { level = "deny", priority = 0 }
+unchecked_time_subtraction = { level = "deny", priority = 0 }
 
 # Misc
 multiple_unsafe_ops_per_block = { level = "warn", priority = 0 }
