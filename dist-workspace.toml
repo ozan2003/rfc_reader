@@ -18,4 +18,4 @@ install-updater = false
 
 [dist.github-custom-runners]
 aarch64-apple-darwin = "macos-15-intel"
-x86_64-apple-darwin = "macos-14-intel"
+x86_64-apple-darwin = "macos-15-intel"
