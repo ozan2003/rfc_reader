@@ -133,7 +133,7 @@ impl TocPanel
     }
 
     /// Moves the selection to the next entry.
-    pub fn next(&mut self)
+    pub const fn next(&mut self)
     {
         if let Some(i) = self.state.selected()
         {
@@ -142,7 +142,7 @@ impl TocPanel
     }
 
     /// Moves the selection to the previous entry.
-    pub fn previous(&mut self)
+    pub const fn previous(&mut self)
     {
         if let Some(i) = self.state.selected()
         {
