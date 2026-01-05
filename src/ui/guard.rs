@@ -97,7 +97,8 @@ impl Drop for TerminalGuard
 ///
 /// Returns an error if the terminal fails to enter raw mode or leave
 /// alternate screen.
-pub fn init_tui() -> Result<Terminal<impl RatatuiBackend>>
+pub fn init_tui()
+-> Result<Terminal<impl RatatuiBackend<Error = std::io::Error>>>
 {
     // Terminal setup is now handled by TerminalGuard
     // We just create and return the terminal
