@@ -163,7 +163,9 @@ fn run_app<T: RatatuiBackend>(
         .app_state
         .contains(AppStateFlags::SHOULD_RUN)
     {
-        terminal.draw(|frame| app.render(frame))?;
+        terminal
+            .draw(|frame| app.render(frame))
+            .map_err(|err| anyhow!("Failed to draw frame: {err}"))?;
 
         if let Event::Key(key) = event_handler.next()? &&
         // This is needed in Windows
@@ -202,11 +204,27 @@ fn run_app<T: RatatuiBackend>(
                 // Scroll the whole viewpoint
                 (AppMode::Normal, KeyCode::Char('f') | KeyCode::PageDown) =>
                 {
-                    app.scroll_down(terminal.size()?.height.into());
+                    let terminal_height = terminal
+                        .size()
+                        .map_err(|err| {
+                            anyhow!("Failed to get terminal height: {err}")
+                        })?
+                        .height
+                        .into();
+
+                    app.scroll_down(terminal_height);
                 },
                 (AppMode::Normal, KeyCode::Char('b') | KeyCode::PageUp) =>
                 {
-                    app.scroll_up(terminal.size()?.height.into());
+                    let terminal_height = terminal
+                        .size()
+                        .map_err(|err| {
+                            anyhow!("Failed to get terminal height: {err}")
+                        })?
+                        .height
+                        .into();
+
+                    app.scroll_up(terminal_height);
                 },
                 // Whole document scroll
                 (AppMode::Normal, KeyCode::Char('g')) =>
