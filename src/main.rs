@@ -133,12 +133,7 @@ fn main() -> Result<()>
     let event_handler = EventHandler::new(Duration::from_millis(200));
 
     // Just propagate any error from run_app
-    #[allow(
-        clippy::needless_return,
-        reason = "Explicit return for readability; the implicit return might \
-                  look accidental."
-    )]
-    return run_app(&mut terminal, app, &event_handler);
+    run_app(&mut terminal, app, &event_handler)
 }
 
 /// Run the main loop
