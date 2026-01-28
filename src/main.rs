@@ -156,167 +156,193 @@ fn run_app<T: RatatuiBackend>(
 where
     T::Error: std::error::Error + Send + Sync + 'static,
 {
+    terminal.draw(|frame| app.render(frame))?;
+
     while app
         .app_state
         .contains(AppStateFlags::SHOULD_RUN)
     {
-        terminal.draw(|frame| app.render(frame))?;
+        let mut should_redraw = false;
 
-        if let Event::Key(key) = event_handler.next()? &&
-        // This is needed in Windows
-            key.kind == KeyEventKind::Press
+        match event_handler.next()?
         {
-            match (app.mode, key.code)
+            // This is needed in Windows, otherwise both press and release
+            // events are captured, leading to double input.
+            Event::Key(key) if key.kind == KeyEventKind::Press =>
             {
-                // Quit with 'q' in normal mode
-                (AppMode::Normal, KeyCode::Char('q')) =>
+                match (app.mode, key.code)
                 {
-                    app.app_state
-                        .remove(AppStateFlags::SHOULD_RUN);
-                },
+                    // Quit with 'q' in normal mode
+                    (AppMode::Normal, KeyCode::Char('q')) =>
+                    {
+                        app.app_state
+                            .remove(AppStateFlags::SHOULD_RUN);
+                    },
 
-                // Help toggle with '?'
-                (AppMode::Normal | AppMode::Help, KeyCode::Char('?')) |
-                (AppMode::Help, KeyCode::Esc) =>
-                {
-                    app.toggle_help();
-                },
-                // Table of contents toggle with 't'
-                (AppMode::Normal, KeyCode::Char('t')) =>
-                {
-                    app.toggle_toc();
-                },
+                    // Help toggle with '?'
+                    (AppMode::Normal | AppMode::Help, KeyCode::Char('?')) |
+                    (AppMode::Help, KeyCode::Esc) =>
+                    {
+                        app.toggle_help();
+                    },
+                    // Table of contents toggle with 't'
+                    (AppMode::Normal, KeyCode::Char('t')) =>
+                    {
+                        app.toggle_toc();
+                    },
 
-                // Navigation in normal mode
-                (AppMode::Normal, KeyCode::Char('j') | KeyCode::Down) =>
-                {
-                    app.scroll_down(1);
-                },
-                (AppMode::Normal, KeyCode::Char('k') | KeyCode::Up) =>
-                {
-                    app.scroll_up(1);
-                },
-                // Scroll the whole viewpoint
-                (AppMode::Normal, KeyCode::Char('f') | KeyCode::PageDown) =>
-                {
-                    let terminal_height = terminal.size()?.height.into();
+                    // Navigation in normal mode
+                    (AppMode::Normal, KeyCode::Char('j') | KeyCode::Down) =>
+                    {
+                        app.scroll_down(1);
+                    },
+                    (AppMode::Normal, KeyCode::Char('k') | KeyCode::Up) =>
+                    {
+                        app.scroll_up(1);
+                    },
+                    // Scroll the whole viewpoint
+                    (
+                        AppMode::Normal,
+                        KeyCode::Char('f') | KeyCode::PageDown,
+                    ) =>
+                    {
+                        let terminal_height = terminal.size()?.height.into();
 
-                    app.scroll_down(terminal_height);
-                },
-                (AppMode::Normal, KeyCode::Char('b') | KeyCode::PageUp) =>
-                {
-                    let terminal_height = terminal.size()?.height.into();
+                        app.scroll_down(terminal_height);
+                    },
+                    (AppMode::Normal, KeyCode::Char('b') | KeyCode::PageUp) =>
+                    {
+                        let terminal_height = terminal.size()?.height.into();
 
-                    app.scroll_up(terminal_height);
-                },
-                // Whole document scroll
-                (AppMode::Normal, KeyCode::Char('g')) =>
-                {
-                    // Use total line count instead of the byte count of the
-                    // document
-                    app.scroll_up(app.rfc_line_number);
-                },
-                (AppMode::Normal, KeyCode::Char('G')) =>
-                {
-                    app.scroll_down(app.rfc_line_number);
-                },
+                        app.scroll_up(terminal_height);
+                    },
+                    // Whole document scroll
+                    (AppMode::Normal, KeyCode::Char('g')) =>
+                    {
+                        // Use total line count instead of the byte count of the
+                        // document
+                        app.scroll_up(app.rfc_line_number);
+                    },
+                    (AppMode::Normal, KeyCode::Char('G')) =>
+                    {
+                        app.scroll_down(app.rfc_line_number);
+                    },
 
-                // Search handling
-                (AppMode::Normal, KeyCode::Char('/')) =>
-                {
-                    app.enter_search_mode();
-                },
-                (AppMode::Search, KeyCode::Enter) =>
-                {
-                    app.perform_search();
-                    app.exit_search_mode();
-                },
-                (AppMode::Search, KeyCode::Esc) =>
-                {
-                    app.exit_search_mode();
-                },
-                (AppMode::Search, KeyCode::Backspace) =>
-                {
-                    app.remove_search_char();
-                },
-                (AppMode::Search, KeyCode::Delete) =>
-                {
-                    app.delete_search_char();
-                },
-                // Cursor navigation
-                (AppMode::Search, KeyCode::Left) =>
-                {
-                    app.move_search_cursor_left();
-                },
-                (AppMode::Search, KeyCode::Right) =>
-                {
-                    app.move_search_cursor_right();
-                },
-                (AppMode::Search, KeyCode::Home) =>
-                {
-                    app.move_search_cursor_home();
-                },
-                (AppMode::Search, KeyCode::End) =>
-                {
-                    app.move_search_cursor_end();
-                },
-                // Ctrl + c toggles case sensitive mode
-                (AppMode::Search, KeyCode::Char('c'))
-                    if key.modifiers == KeyModifiers::CONTROL =>
-                {
-                    app.toggle_case_sensitivity();
-                },
-                // Ctrl + r toggles regex mode
-                (AppMode::Search, KeyCode::Char('r'))
-                    if key.modifiers == KeyModifiers::CONTROL =>
-                {
-                    app.toggle_regex_mode();
-                },
-                (AppMode::Search, KeyCode::Char(ch)) =>
-                {
-                    app.add_search_char(ch);
-                },
+                    // Search handling
+                    (AppMode::Normal, KeyCode::Char('/')) =>
+                    {
+                        app.enter_search_mode();
+                    },
+                    (AppMode::Search, KeyCode::Enter) =>
+                    {
+                        app.perform_search();
+                        app.exit_search_mode();
+                    },
+                    (AppMode::Search, KeyCode::Esc) =>
+                    {
+                        app.exit_search_mode();
+                    },
+                    (AppMode::Search, KeyCode::Backspace) =>
+                    {
+                        app.remove_search_char();
+                    },
+                    (AppMode::Search, KeyCode::Delete) =>
+                    {
+                        app.delete_search_char();
+                    },
+                    // Cursor navigation
+                    (AppMode::Search, KeyCode::Left) =>
+                    {
+                        app.move_search_cursor_left();
+                    },
+                    (AppMode::Search, KeyCode::Right) =>
+                    {
+                        app.move_search_cursor_right();
+                    },
+                    (AppMode::Search, KeyCode::Home) =>
+                    {
+                        app.move_search_cursor_home();
+                    },
+                    (AppMode::Search, KeyCode::End) =>
+                    {
+                        app.move_search_cursor_end();
+                    },
+                    // Ctrl + c toggles case sensitive mode
+                    (AppMode::Search, KeyCode::Char('c'))
+                        if key.modifiers == KeyModifiers::CONTROL =>
+                    {
+                        app.toggle_case_sensitivity();
+                    },
+                    // Ctrl + r toggles regex mode
+                    (AppMode::Search, KeyCode::Char('r'))
+                        if key.modifiers == KeyModifiers::CONTROL =>
+                    {
+                        app.toggle_regex_mode();
+                    },
+                    (AppMode::Search, KeyCode::Char(ch)) =>
+                    {
+                        app.add_search_char(ch);
+                    },
 
-                // Search result navigation
-                (AppMode::Normal, KeyCode::Char('n')) =>
-                {
-                    app.next_search_result();
-                },
-                (AppMode::Normal, KeyCode::Char('N')) =>
-                {
-                    app.prev_search_result();
-                },
-                (AppMode::Normal, KeyCode::Esc) =>
-                {
-                    app.reset_search_highlights();
-                },
+                    // Search result navigation
+                    (AppMode::Normal, KeyCode::Char('n')) =>
+                    {
+                        app.next_search_result();
+                    },
+                    (AppMode::Normal, KeyCode::Char('N')) =>
+                    {
+                        app.prev_search_result();
+                    },
+                    (AppMode::Normal, KeyCode::Esc) =>
+                    {
+                        app.reset_search_highlights();
+                    },
 
-                // ToC navigation
-                (AppMode::Normal, KeyCode::Char('w'))
-                    if app
-                        .app_state
-                        .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
-                {
-                    app.rfc_toc_panel.previous();
-                },
-                (AppMode::Normal, KeyCode::Char('s'))
-                    if app
-                        .app_state
-                        .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
-                {
-                    app.rfc_toc_panel.next();
-                },
-                (AppMode::Normal, KeyCode::Enter)
-                    if app
-                        .app_state
-                        .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
-                {
-                    app.jump_to_toc_entry();
-                },
+                    // ToC navigation
+                    (AppMode::Normal, KeyCode::Char('w'))
+                        if app
+                            .app_state
+                            .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
+                    {
+                        app.rfc_toc_panel.previous();
+                    },
+                    (AppMode::Normal, KeyCode::Char('s'))
+                        if app
+                            .app_state
+                            .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
+                    {
+                        app.rfc_toc_panel.next();
+                    },
+                    (AppMode::Normal, KeyCode::Enter)
+                        if app
+                            .app_state
+                            .contains(AppStateFlags::SHOULD_SHOW_TOC) =>
+                    {
+                        app.jump_to_toc_entry();
+                    },
 
-                _ =>
-                {}, // Ignore other key combinations
-            }
+                    _ =>
+                    {}, // Ignore other key combinations
+                }
+
+                should_redraw = true;
+            },
+            Event::Key(_) =>
+            {},
+            Event::Tick =>
+            {
+                should_redraw = true;
+            },
+            Event::Resize(_, _) =>
+            {
+                terminal.clear()?;
+                should_redraw = true;
+            },
+        }
+
+        if should_redraw
+        {
+            terminal.draw(|frame| app.render(frame))?;
         }
     }
 
