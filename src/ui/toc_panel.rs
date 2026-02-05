@@ -9,7 +9,7 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState};
 use regex::Regex;
 use textwrap::wrap;
 
-use super::app::LineNumber;
+use crate::types::LineNumber;
 
 // Style for each individual ToC entry
 const TOC_HIGHLIGHT_STYLE: Style = Style::new()

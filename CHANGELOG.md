@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-02-05
+
+## Added
+
+- Migrated common types to a new `types` module in [types.rs](src/types.rs)
+- Introduced `RfcNum` type alias for RFC document numbers in [types.rs](src/types.rs)
+
+## Changed
+
+- Restricted RFC document numbers to never include `0` across the codebase,
+including [app.rs](src/ui/app.rs), [cache.rs](src/cache.rs), [client.rs](src/client.rs),
+[toc_panel.rs](src/ui/toc_panel.rs) and [main.rs](src/main.rs)
+
 ## [0.11.4] - 2026-01-28
 
 ## Changed

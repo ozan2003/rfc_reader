@@ -11,6 +11,7 @@ use rfc_reader::client::RfcClient;
 use rfc_reader::logging::{
     clear_log_files, get_log_files_dir_path, init_logging,
 };
+use rfc_reader::types::RfcNum;
 use rfc_reader::ui::guard::{init_panic_hook, init_tui};
 use rfc_reader::ui::{App, AppMode, AppStateFlags, Event, EventHandler};
 
@@ -43,7 +44,7 @@ fn main() -> Result<()>
         .args([
             arg!([rfc] "RFC number to open")
                 .value_name("NUMBER")
-                .value_parser(clap::value_parser!(u16))
+                .value_parser(clap::value_parser!(RfcNum))
                 .index(1)
                 .required_unless_present("maintenance")
                 // Disallow giving a NUMBER together with those actions
@@ -82,8 +83,8 @@ fn main() -> Result<()>
     let client = RfcClient::default();
 
     // Get RFC if specified
-    let rfc_number = *matches
-        .get_one::<u16>("rfc")
+    let rfc_number: RfcNum = *matches
+        .get_one("rfc")
         .ok_or(anyhow!("RFC number is required"))?;
 
     // Get the RFC content - first check cache, then fetch from network if

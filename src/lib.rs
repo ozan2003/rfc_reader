@@ -14,8 +14,10 @@
 //! - `client`: HTTP client for remote RFC fetching.
 //! - `cache`: Local storage for performance improvement.
 //! - `ui`: Terminal user interface components and event handling.
+//! - `types`: Common types and aliases used across the library.
 pub mod cache;
 pub mod client;
+pub mod types;
 pub mod ui;
 
 pub use ui::logging;

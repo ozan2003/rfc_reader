@@ -10,6 +10,8 @@ use ureq::Agent;
 use ureq::config::Config;
 use ureq::tls::{TlsConfig, TlsProvider};
 
+use crate::types::RfcNum;
+
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
 const RFC_INDEX_URL: &str = "https://www.rfc-editor.org/rfc-index.txt";
 
@@ -63,7 +65,7 @@ impl RfcClient
     /// # Errors
     ///
     /// Returns an error if the RFC is not found or unavailable.
-    pub fn fetch_rfc(&self, rfc_number: u16) -> Result<Box<str>>
+    pub fn fetch_rfc(&self, rfc_number: RfcNum) -> Result<Box<str>>
     {
         // RFC documents are available in TXT format
         let rfc_url = format!("{RFC_BASE_URL}{rfc_number}.txt");

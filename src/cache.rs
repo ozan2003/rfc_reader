@@ -8,6 +8,8 @@ use std::path::Path;
 use anyhow::{Context, Result, bail};
 use directories::ProjectDirs;
 
+use crate::types::RfcNum;
+
 /// Cache for storing RFC documents locally.
 ///
 /// Provides functionality to read and write RFCs to disk,
@@ -61,7 +63,7 @@ impl RfcCache
     /// # Errors
     ///
     /// Returns an error if the cached RFC does not exist or cannot be read.
-    pub fn get_cached_rfc(&self, rfc_number: u16) -> Result<Box<str>>
+    pub fn get_cached_rfc(&self, rfc_number: RfcNum) -> Result<Box<str>>
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
@@ -97,7 +99,7 @@ impl RfcCache
     /// # Errors
     ///
     /// Returns an error if the cache file cannot be created or written to.
-    pub fn cache_rfc(&self, rfc_number: u16, content: &str) -> Result<()>
+    pub fn cache_rfc(&self, rfc_number: RfcNum, content: &str) -> Result<()>
     {
         let rfc_path = self.format_cache_path(rfc_number);
 
@@ -180,7 +182,7 @@ impl RfcCache
     /// # Returns
     ///
     /// The path where the RFC should be cached
-    fn format_cache_path(&self, rfc_number: u16) -> Box<Path>
+    fn format_cache_path(&self, rfc_number: RfcNum) -> Box<Path>
     {
         self.cache_dir
             .join(format!("rfc{rfc_number}.txt"))
@@ -431,7 +433,7 @@ mod tests
             cache_dir: temp_dir.path().into(),
         };
 
-        let rfc_number = 1234;
+        let rfc_number = RfcNum::new(1234).expect("its non-zero");
         let content = "RFC Content Test";
 
         // Cache the bogus RFC

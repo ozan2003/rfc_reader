@@ -6,7 +6,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::stdout;
-use std::ops::Range;
+use std::num::NonZeroU16;
 
 use bitflags::bitflags;
 use cached::proc_macro::cached;
@@ -23,6 +23,7 @@ use regex::Regex;
 
 use super::guard::TerminalGuard;
 use super::toc_panel::TocPanel;
+use crate::types::{LineNumber, MatchSpan, RfcNum};
 
 /// Style for highlighting matches in the search results.
 const MATCH_HIGHLIGHT_STYLE: Style = Style::new()
@@ -95,12 +96,6 @@ impl Default for AppStateFlags
     }
 }
 
-/// Type alias for line numbers.
-pub(super) type LineNumber = usize;
-
-/// Type alias for matches spanning a line.
-type MatchSpan = Range<usize>;
-
 /// Manages the core state and UI logic.
 ///
 /// This includes rendering the document, processing user input, and handling
@@ -111,7 +106,7 @@ pub struct App
     /// Content of the currently loaded RFC
     pub rfc_content: Box<str>,
     /// Number of the currently loaded RFC
-    pub rfc_number: u16,
+    pub rfc_number: RfcNum,
     /// Table of contents panel for the current document
     pub rfc_toc_panel: TocPanel,
     /// Total line number of the content
@@ -160,7 +155,7 @@ impl App
     ///
     /// A new `App` instance initialized for the specified RFC
     #[must_use]
-    pub fn new(rfc_number: u16, rfc_content: Box<str>) -> Self
+    pub fn new(rfc_number: RfcNum, rfc_content: Box<str>) -> Self
     {
         let rfc_toc_panel = TocPanel::new(&rfc_content);
         let rfc_line_number = rfc_content.lines().count();
@@ -1217,7 +1212,7 @@ impl Default for App
 
         Self {
             rfc_content: Box::from(""),
-            rfc_number: 0,
+            rfc_number: NonZeroU16::new(1).expect("its non-zero"),
             rfc_toc_panel: TocPanel::default(),
             rfc_line_number: 0,
             current_scroll_pos: 0,
