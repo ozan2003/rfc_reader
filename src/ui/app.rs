@@ -202,9 +202,10 @@ impl App
     /// Builds the RFC text with highlighting for search matches and titles.
     fn build_text(&self) -> Text<'_>
     {
-        // Check if we need search highlighting
-        let has_searched =
-            self.mode == AppMode::Search || !self.query_text.is_empty();
+        // Keep confirmed highlights in Normal mode, but hide them while
+        // actively editing in Search mode to avoid stale visuals.
+        let should_show_search_highlights =
+            self.mode != AppMode::Search && self.has_search_results();
 
         let lines: Vec<Line> = self
             .rfc_content
@@ -216,7 +217,7 @@ impl App
                                          .binary_search_by(|entry| entry.line_number.cmp(&line_num))
                                          .is_ok();
 
-                if has_searched
+                if should_show_search_highlights
                 {
                     // Highlight search match
                     if let Some(matches) = self.query_matches.get(&line_num)
@@ -825,7 +826,8 @@ impl App
     )]
     fn build_search_info(&self) -> Option<String>
     {
-        if !self.has_search_results()
+        // Don't show the previous search's info when entering a new search.
+        if self.mode == AppMode::Search || !self.has_search_results()
         {
             return None;
         }

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2026-03-27
+
+## Fixed
+
+- Fixed a bug where the search info from the previous search would still be shown when entering a new search in [app.rs](src/ui/app.rs)
+- Remove stale search highlight when entering a new search in [app.rs](src/ui/app.rs)
+
 ## [0.13.0] - 2026-03-27
 
 ## Changed
