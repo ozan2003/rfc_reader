@@ -49,13 +49,16 @@ const MIN_TERMINAL_WIDTH: u16 = 94;
 const MIN_TERMINAL_HEIGHT: u16 = 15;
 
 // ToC/content split percentages.
-/// 1/4 for `ToC`, 3/4 for content
-const TOC_PERCENTAGE: u16 = 25;
 /// Constraints for the `ToC`/content split.
-const TOC_SPLIT_CONSTRAINTS: [Constraint; 2] = [
-    Constraint::Percentage(TOC_PERCENTAGE),
-    Constraint::Percentage(100 - TOC_PERCENTAGE),
-];
+const TOC_SPLIT_CONSTRAINTS: [Constraint; 2] = {
+    /// 1/4 for `ToC`, 3/4 for content
+    const TOC_PERCENTAGE: u16 = 25;
+
+    [
+        Constraint::Percentage(TOC_PERCENTAGE),
+        Constraint::Percentage(100 - TOC_PERCENTAGE),
+    ]
+};
 
 // Search parallelization thresholds.
 /// Minimum number of lines before search work can be parallelized.
