@@ -1258,6 +1258,20 @@ fn centered_rect(
     area
 }
 
+/// Search execution strategy for collecting query matches.
+#[derive(Debug, Clone, Copy)]
+enum SearchStrategy
+{
+    /// Process search linearly on a single thread.
+    Serial,
+    /// Process search using multiple workers.
+    Parallel
+    {
+        /// Number of worker threads to spawn.
+        worker_count: usize,
+    },
+}
+
 /// Collects all search matches for the given content.
 ///
 /// Uses bounded parallelism for larger documents and falls back to serial
@@ -1279,12 +1293,15 @@ fn collect_search_matches(
 {
     let lines: Vec<&str> = content.lines().collect();
 
-    if !should_parallelize_search(lines.len())
+    let worker_count = match determine_search_strategy(lines.len())
     {
-        return collect_search_matches_serial(regex, &lines, 0);
-    }
+        SearchStrategy::Serial =>
+        {
+            return collect_search_matches_serial(regex, &lines, 0);
+        },
+        SearchStrategy::Parallel { worker_count } => worker_count,
+    };
 
-    let worker_count = get_parallel_worker_count(lines.len());
     // Assign each worker a contiguous chunk of lines.
     let chunk_size = lines.len().div_ceil(worker_count);
 
@@ -1368,24 +1385,47 @@ fn collect_search_matches_serial(
     results
 }
 
-/// Returns true if the workload is large enough to benefit from parallelism.
-const fn should_parallelize_search(total_lines: usize) -> bool
+/// Determines whether search should run serially or in parallel.
+///
+/// # Arguments
+///
+/// * `total_lines` - The total number of lines in the document to search
+///   through
+///
+/// # Returns
+///
+/// * [`SearchStrategy::Serial`] if the document is small or if parallelism is
+///   not available
+/// * [`SearchStrategy::Parallel`] with the number of worker threads to use for
+///   larger documents
+fn determine_search_strategy(total_lines: usize) -> SearchStrategy
 {
-    total_lines >= MIN_LINES_FOR_PARALLEL_SEARCH
-}
+    if total_lines < MIN_LINES_FOR_PARALLEL_SEARCH
+    {
+        return SearchStrategy::Serial;
+    }
 
-/// Determines how many workers should process the search workload.
-fn get_parallel_worker_count(total_lines: usize) -> usize
-{
-    let available_workers =
-        thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get);
+    let Ok(available_workers) =
+        thread::available_parallelism().map(std::num::NonZeroUsize::get)
+    else
+    {
+        return SearchStrategy::Serial;
+    };
 
     let line_limited_workers =
-        total_lines / PARALLEL_SEARCH_MIN_LINES_PER_WORKER;
+        (total_lines / PARALLEL_SEARCH_MIN_LINES_PER_WORKER).max(1);
 
-    available_workers
-        .min(line_limited_workers.max(1))
-        .max(1)
+    let worker_count = available_workers.min(line_limited_workers);
+
+    if worker_count <= 1
+    {
+        // 1 worker ain't making sense for parallelism, just do it serially.
+        SearchStrategy::Serial
+    }
+    else
+    {
+        SearchStrategy::Parallel { worker_count }
+    }
 }
 
 /// Gets a compiled regex for the given query, case sensitivity, and regex mode.

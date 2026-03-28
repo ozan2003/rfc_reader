@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.2] - 2026-03-28
+
+## Added
+
+- Introduced a new `SearchStrategy` enum to encapsulate the search strategy in [app.rs](src/ui/app.rs)
+for better type safety.
+
+## Changed
+
+- Refactored whether the search should be done in parallel manner in [app.rs](src/ui/app.rs).
+
 ## [0.13.1] - 2026-03-27
 
 ## Fixed
