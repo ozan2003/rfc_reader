@@ -793,13 +793,18 @@ impl App
     )]
     fn build_progress_text(&self) -> String
     {
-        let progress_percentage = if self.rfc_line_number > 0
-        {
-            (self.current_scroll_pos * 100) / self.rfc_line_number
-        }
-        else
-        {
-            0
+        let progress_percentage = {
+            let last_line_pos = self.rfc_line_number.saturating_sub(1);
+
+            if last_line_pos > 0
+            {
+                (self.current_scroll_pos * 100) / last_line_pos
+            }
+            else
+            {
+                // Empty document edge case: show 100% if there's content
+                if self.rfc_line_number > 0 { 100 } else { 0 }
+            }
         };
 
         let search_info = self.build_search_info().unwrap_or_default();
