@@ -10,7 +10,7 @@ use std::io::stdout;
 use std::panic::{set_hook, take_hook};
 
 use anyhow::Result;
-use crossterm::ExecutableCommand;
+use crossterm::ExecutableCommand as _;
 use crossterm::cursor::{SetCursorStyle, Show};
 use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
@@ -85,7 +85,7 @@ impl Drop for TerminalGuard
     }
 }
 
-/// Initialize the terminal
+/// Initialize the terminal.
 ///
 /// This creates a new terminal and returns it.
 ///
@@ -108,7 +108,7 @@ pub fn init_tui()
     Ok(Terminal::new(backend)?)
 }
 
-/// Initialize the panic hook to handle panics
+/// Initialize the panic hook to handle panics.
 ///
 /// # Panics
 ///

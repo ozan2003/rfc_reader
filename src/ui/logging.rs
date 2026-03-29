@@ -12,11 +12,11 @@
 //! - Compressed log files are deleted when the number of log files exceeds
 //!   `MAX_LOG_FILE_COUNT`.
 use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::io::Write as _;
 use std::path::Path;
 use std::sync::LazyLock;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context as _, Result, bail};
 use directories::BaseDirs;
 use env_logger::{Builder, Target};
 use file_rotate::compression::Compression;
@@ -65,7 +65,7 @@ static LOG_FILES_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
 
 /// Base log file path inside the logs directory.
 ///
-/// Formatted as: `<package-name>.log`
+/// Formatted as: `<package-name>.log`.
 static BASE_LOG_FILE_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
     get_log_files_dir_path()
         .join(concat!(env!("CARGO_PKG_NAME"), ".log"))
@@ -173,7 +173,7 @@ pub fn clear_log_files() -> Result<()>
 
     let Some(base_log_name) = get_base_log_file_path()
         .file_name()
-        .and_then(|s| s.to_str())
+        .and_then(|st| st.to_str())
     else
     {
         bail!("Failed to get log file name");
@@ -189,7 +189,7 @@ pub fn clear_log_files() -> Result<()>
             continue;
         }
 
-        let Some(name) = path.file_name().and_then(|s| s.to_str())
+        let Some(name) = path.file_name().and_then(|st| st.to_str())
         else
         {
             continue;
@@ -197,7 +197,7 @@ pub fn clear_log_files() -> Result<()>
 
         if name == base_log_name ||
             name.strip_prefix(base_log_name)
-                .is_some_and(|s| s.starts_with('.'))
+                .is_some_and(|st| st.starts_with('.'))
         {
             fs::remove_file(path).context("Failed to remove log file")?;
         }

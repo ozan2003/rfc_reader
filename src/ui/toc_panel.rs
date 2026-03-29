@@ -11,15 +11,15 @@ use textwrap::wrap;
 
 use crate::types::LineNumber;
 
-// Style for each individual ToC entry
+/// Style for each individual `ToC` entry.
 const TOC_HIGHLIGHT_STYLE: Style = Style::new()
     .fg(Color::LightYellow)
     .add_modifier(Modifier::BOLD);
 
-// Style for the ToC border
+/// Style for the `ToC` border.
 const TOC_BORDER_STYLE: Style = Style::new().fg(Color::Gray);
 
-// Symbol used to highlight the currently selected ToC entry
+/// Symbol used to highlight the currently selected `ToC` entry.
 const TOC_HIGHLIGHT_SYMBOL: &str = "> ";
 
 /// Represents a table of contents entry.
@@ -28,9 +28,9 @@ const TOC_HIGHLIGHT_SYMBOL: &str = "> ";
 #[derive(Debug, Clone, Default)]
 pub struct TocEntry
 {
-    /// The title text of the section
+    /// The title text of the section.
     pub title: Box<str>,
-    /// The line number where this section appears in the document
+    /// The line number where this section appears in the document.
     pub line_number: LineNumber,
 }
 
@@ -40,9 +40,9 @@ pub struct TocEntry
 #[derive(Default)]
 pub struct TocPanel
 {
-    /// Collection of table of contents entries
+    /// Collection of table of contents entries.
     entries: Vec<TocEntry>,
-    /// Current selection state
+    /// Current selection state.
     state: ListState,
 }
 
@@ -59,7 +59,7 @@ impl TocPanel
     ///
     /// # Returns
     ///
-    /// A new `TocPanel` instance
+    /// A new `TocPanel` instance.
     pub fn new(content: &str) -> Self
     {
         let entries = parsing::parse_toc(content);
@@ -97,7 +97,7 @@ impl TocPanel
             clippy::arithmetic_side_effects,
             reason = "usize not expected to overflow"
         )]
-        let wrap_width = (area.width as usize)
+        let wrap_width = usize::from(area.width)
             .saturating_sub(TOC_HIGHLIGHT_SYMBOL.len() + 2);
 
         let items: Vec<ListItem> = self
@@ -165,10 +165,13 @@ impl TocPanel
 
         self.state
             .selected()
-            .map(|i| self.entries[i].line_number)
+            .and_then(|i| self.entries.get(i))
+            .map(|entry| entry.line_number)
     }
 }
 
+/// Specialized functions for parsing document content to extract a table of
+/// contents.
 pub mod parsing
 {
     use std::str::Lines;
@@ -181,29 +184,51 @@ pub mod parsing
     // Note: Don't trim the leading whitespace or eat the other chars
     // before beginning of the line so that we can distinguish the actual
     // ToC entries from the section headings by preserving the indentation.
+
+    /// Matches lines that announce the start of a table of contents block.
+    ///
+    /// Supported variants:
+    /// - `Table of Contents`
+    /// - `Contents`
+    /// - `TABLE OF CONTENTS`
+    /// - Numbered form like `3 Table of Contents`
     static TOC_HEADER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         let toc_entries = [
-            r"(?:Table of Contents|Contents)", // Standard header
-            r"(?:TABLE OF CONTENTS)",          // All caps variant
+            "(?:Table of Contents|Contents)", // Standard header
+            "(?:TABLE OF CONTENTS)",          // All caps variant
             r"(?:\d+\.?\s+Table of Contents)", // Numbered ToC section
         ];
         let pattern = format!("^({})$", toc_entries.join("|"));
         Regex::new(&pattern).expect("Invalid TOC header regex")
     });
 
-    // Acknowledgements, authors' addresses, etc. aren't included.
+    /// Patterns for individual `ToC` rows.
+    ///
+    /// Capture groups are intentionally consistent across patterns:
+    /// - group 1: section label (for example `1.2` or `Appendix A`)
+    /// - group 2: section title text
+    ///
+    /// Delimited page numbers (".... 17") are optional and ignored.
+    /// Non-`ToC` sections such as acknowledgements are intentionally excluded.
     static TOC_ENTRY_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
         // Account for the leading whitespace in the entries
         vec![
-            // Standard format with dots: "1. Introduction..................5"
+            // Numbered entry, for example:
+            // `1. Introduction..................5`
+            // `2.1  Terminology`
             Regex::new(r"^\s*(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
                 .expect("Invalid TOC entry regex"),
-            // Appendix format: "   Appendix A. Example"
+            // Appendix entry, for example:
+            // `Appendix A. Packet Format`
             Regex::new(r"^\s*(Appendix\s+[A-Z]\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
                 .expect("Invalid appendix regex"),
         ]
     });
 
+    /// Matches numbered section headings in the body.
+    ///
+    /// This is used as a stop signal while parsing `ToC` lines: once a body
+    /// heading appears after valid `ToC` entries, the parser exits `ToC` mode.
     static SECTION_HEADING_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r"^(\d+(?:\.\d+)*\.)\s+\S")
             .expect("Invalid section heading regex")
@@ -253,18 +278,13 @@ pub mod parsing
     fn find_toc_start(lines: Lines<'_>) -> Option<LineNumber>
     {
         lines.enumerate().find_map(|(index, line)| {
-            if TOC_HEADER_REGEX.is_match(line.trim())
-            {
-                #[expect(
-                    clippy::arithmetic_side_effects,
-                    reason = "LineNumber not expected to overflow"
-                )]
-                Some(index + 1) // Skip the `ToC` header line
-            }
-            else
-            {
-                None
-            }
+            #[expect(
+                clippy::arithmetic_side_effects,
+                reason = "LineNumber not expected to overflow"
+            )]
+            TOC_HEADER_REGEX
+                .is_match(line.trim())
+                .then(|| index + 1) // Skip the `ToC` header line
         })
     }
 
@@ -277,7 +297,7 @@ pub mod parsing
     ///
     /// # Returns
     ///
-    /// A vector of `TocEntry` instances representing the document's structure
+    /// A vector of `TocEntry` instances representing the document's structure.
     fn extract_toc_entries(
         lines: &Lines<'_>,
         start_index: LineNumber,
@@ -317,7 +337,7 @@ pub mod parsing
         entries
     }
 
-    /// Check if we should stop parsing the `ToC`
+    /// Check if we should stop parsing the `ToC`.
     ///
     /// # Arguments
     ///
@@ -328,7 +348,7 @@ pub mod parsing
     ///
     /// # Returns
     ///
-    /// A boolean indicating whether we should stop parsing the `ToC`
+    /// A boolean indicating whether we should stop parsing the `ToC`.
     fn should_stop_parsing(
         trimmed_line: &str,
         has_found_entries: bool,
@@ -383,7 +403,7 @@ pub mod parsing
         false
     }
 
-    /// Try to extract a `ToC` entry from a line
+    /// Try to extract a `ToC` entry from a line.
     ///
     /// # Arguments
     ///
@@ -458,7 +478,7 @@ pub mod parsing
     ///
     /// # Returns
     ///
-    /// A vector of `TocEntry` instances representing the document's structure
+    /// A vector of `TocEntry` instances representing the document's structure.
     ///
     /// # Warning
     ///
@@ -512,7 +532,7 @@ pub mod parsing
     ///
     /// # Returns
     ///
-    /// A vector of `TocEntry` instances representing the document's structure
+    /// A vector of `TocEntry` instances representing the document's structure.
     pub fn parse_toc(content: &str) -> Vec<TocEntry>
     {
         // First, look for existing ToC. Otherwise, use heuristic.

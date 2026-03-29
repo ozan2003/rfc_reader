@@ -1,10 +1,10 @@
 //! RFC client for fetching documents.
 //!
 //! Manages network requests to the RFC Editor's website.
-use std::io::Read;
+use std::io::Read as _;
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use log::debug;
 use ureq::Agent;
 use ureq::config::Config;
@@ -12,15 +12,18 @@ use ureq::tls::{TlsConfig, TlsProvider};
 
 use crate::types::RfcNum;
 
+/// Base URL for fetching RFC documents in TXT format.
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
+/// Specific URL for fetching the RFC index.
 const RFC_INDEX_URL: &str = "https://www.rfc-editor.org/rfc-index.txt";
 
-/// Client for fetching RFCs
+/// Client for fetching RFCs.
 ///
 /// This client is used to fetch RFCs from the RFC Editor's website.
 /// It is responsible for fetching the RFC index and RFCs.
 pub struct RfcClient
 {
+    /// HTTP client for making requests to the the website.
     client: Agent,
 }
 

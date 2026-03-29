@@ -2,10 +2,10 @@
 //!
 //! Stores document content on disk to minimize redundant network requests.
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::Write as _;
 use std::path::Path;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context as _, Result, bail};
 use directories::ProjectDirs;
 
 use crate::types::RfcNum;
@@ -16,7 +16,7 @@ use crate::types::RfcNum;
 /// reducing the need for repeated network requests.
 pub struct RfcCache
 {
-    /// Directory where cache files are stored
+    /// Directory where cache files are stored.
     cache_dir: Box<Path>,
 }
 
@@ -181,7 +181,7 @@ impl RfcCache
     ///
     /// # Returns
     ///
-    /// The path where the RFC should be cached
+    /// The path where the RFC should be cached.
     fn format_cache_path(&self, rfc_number: RfcNum) -> Box<Path>
     {
         self.cache_dir
@@ -193,7 +193,7 @@ impl RfcCache
     ///
     /// # Returns
     ///
-    /// The path where the RFC index should be cached
+    /// The path where the RFC index should be cached.
     fn get_index_cache_path(&self) -> Box<Path>
     {
         self.cache_dir
@@ -323,7 +323,7 @@ impl RfcCache
 mod tests
 {
     use std::fs::File;
-    use std::io::Write;
+    use std::io::Write as _;
 
     use tempfile::TempDir;
 

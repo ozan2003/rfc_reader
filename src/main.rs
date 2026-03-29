@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context as _, Result, anyhow, bail};
 use clap::{ArgAction, ArgGroup, Command, arg, crate_version};
 use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use log::{debug, error, info};
@@ -137,7 +137,7 @@ fn main() -> Result<()>
     run_app(&mut terminal, app, &event_handler)
 }
 
-/// Run the main loop
+/// Run the main loop.
 ///
 /// # Arguments
 ///

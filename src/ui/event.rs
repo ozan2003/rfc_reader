@@ -6,34 +6,34 @@ use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-use anyhow::{Context, Result};
+use anyhow::{Context as _, Result};
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
 
-/// Events that can be processed by the application
+/// Events that can be processed by the application.
 #[derive(Debug, Clone, Copy)]
 pub enum Event
 {
-    /// Regular time tick for updating UI elements
+    /// Regular time tick for updating UI elements.
     Tick,
-    /// Keyboard input event
+    /// Keyboard input event.
     Key(KeyEvent),
-    /// Terminal resize event with new dimensions
+    /// Terminal resize event with new dimensions.
     Resize(u16, u16),
 }
 
-/// Handles terminal events
+/// Handles terminal events.
 ///
 /// Manages event handling in a separate thread and provides
 /// a way to receive events through a channel.
 pub struct EventHandler
 {
     /// Receiver side of the event channel to get events from the handler
-    /// thread
+    /// thread.
     event_receiver: mpsc::Receiver<Event>,
-    /// Sender for shutdown the thread for graceful shutdown
+    /// Sender for shutdown the thread for graceful shutdown.
     // The receiver is moved to the thread
     shutdown_sender: mpsc::Sender<()>,
-    /// Handle to keep the thread alive
+    /// Handle to keep the thread alive.
     // Option is used to move the handle in `drop`
     // since we can't move the handle out of the `&mut self`
     // for calling `join` in `drop`
@@ -46,7 +46,7 @@ impl EventHandler
     /// shutdown signals are observed promptly.
     const MAX_POLL_WAIT: Duration = Duration::from_millis(50);
 
-    /// Creates a new event handler with the specified tick rate
+    /// Creates a new event handler with the specified tick rate.
     ///
     /// # Arguments
     ///
@@ -54,7 +54,7 @@ impl EventHandler
     ///
     /// # Returns
     ///
-    /// A new `EventHandler` instance with a running background thread
+    /// A new `EventHandler` instance with a running background thread.
     ///
     /// # Panics
     ///
@@ -151,13 +151,13 @@ impl EventHandler
         }
     }
 
-    /// Gets the next event from the event channel
+    /// Gets the next event from the event channel.
     ///
-    /// This method blocks until an event is available
+    /// This method blocks until an event is available.
     ///
     /// # Returns
     ///
-    /// The next event, or an error if the channel is disconnected
+    /// The next event, or an error if the channel is disconnected.
     ///
     /// # Errors
     ///

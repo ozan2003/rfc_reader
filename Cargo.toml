@@ -59,9 +59,15 @@ redundant-clone = { level = "warn", priority = -4 }
 derive-partial-eq-without-eq = { level = "warn", priority = -5 }
 unnecessary-struct-initialization = { level = "warn", priority = -6 }
 redundant-pub-crate = { level = "warn", priority = -7 }
-missing-const-for-fn = { level = "deny", priority = -8 }
-undocumented_unsafe_blocks = { level = "deny", priority = -8 }
-branches_sharing_code = { level = "warn", priority = -9 }
+doc_paragraphs_missing_punctuation = { level = "warn", priority = -8 }
+missing_docs_in_private_items = { level = "warn", priority = -9 }
+missing-const-for-fn = { level = "deny", priority = -9 }
+unnecessary_safety_doc = { level = "warn", priority = -10 }
+undocumented_unsafe_blocks = { level = "deny", priority = -10 }
+needless_raw_strings = { level = "warn", priority = -11 }
+branches_sharing_code = { level = "warn", priority = -11 }
+unused_trait_names = { level = "warn", priority = -12 }
+min_ident_chars = { level = "forbid", priority = -12 }
 uninlined-format-args = "allow"
 
 arithmetic_side_effects = { level = "warn", priority = 0 }
@@ -80,6 +86,7 @@ mem_forget = { level = "warn", priority = 0 }
 use_self = { level = "warn", priority = 0 }
 useless_let_if_seq = { level = "warn", priority = 0 }
 str_to_string = { level = "warn", priority = 0 }
+if_then_some_else_none = { level = "warn", priority = 0 }
 
 # The profile that 'dist' will build with
 [profile.dist]

@@ -51,7 +51,7 @@ const MIN_TERMINAL_HEIGHT: u16 = 15;
 // ToC/content split percentages.
 /// Constraints for the `ToC`/content split.
 const TOC_SPLIT_CONSTRAINTS: [Constraint; 2] = {
-    /// 1/4 for `ToC`, 3/4 for content
+    /// 1/4 for `ToC`, 3/4 for content.
     const TOC_PERCENTAGE: u16 = 25;
 
     [
@@ -72,11 +72,11 @@ const PARALLEL_SEARCH_MIN_LINES_PER_WORKER: usize = 250;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppMode
 {
-    /// Normal reading mode, default state
+    /// Normal reading mode, default state.
     Normal,
-    /// Help overlay being displayed
+    /// Help overlay being displayed.
     Help,
-    /// Search mode, accepting search input
+    /// Search mode, accepting search input.
     Search,
 }
 
@@ -113,21 +113,21 @@ impl Default for AppStateFlags
 pub struct App
 {
     // Core document
-    /// Content of the currently loaded RFC
+    /// Content of the currently loaded RFC.
     pub rfc_content: Box<str>,
-    /// Number of the currently loaded RFC
+    /// Number of the currently loaded RFC.
     pub rfc_number: RfcNum,
-    /// Table of contents panel for the current document
+    /// Table of contents panel for the current document.
     pub rfc_toc_panel: TocPanel,
-    /// Total line number of the content
+    /// Total line number of the content.
     pub rfc_line_number: LineNumber,
 
     // Navigation
-    /// Current scroll position in the document
+    /// Current scroll position in the document.
     pub current_scroll_pos: LineNumber,
 
     // UI state
-    /// Current application mode
+    /// Current application mode.
     pub mode: AppMode,
     /// Flags for managing the application state.
     pub app_state: AppStateFlags,
@@ -142,7 +142,7 @@ pub struct App
     // Search
     /// Text of the query to search.
     pub query_text: String,
-    /// Cursor position in the search text (byte index)
+    /// Cursor position in the search text (byte index).
     pub query_cursor_pos: usize,
     /// Line numbers where query matches were found.
     pub query_match_line_nums: Vec<LineNumber>,
@@ -163,7 +163,7 @@ impl App
     ///
     /// # Returns
     ///
-    /// A new `App` instance initialized for the specified RFC
+    /// A new `App` instance initialized for the specified RFC.
     #[must_use]
     pub fn new(rfc_number: RfcNum, rfc_content: Box<str>) -> Self
     {
@@ -254,7 +254,7 @@ impl App
     ///
     /// # Returns
     ///
-    /// A `Line` with appropriate highlighting applied
+    /// A `Line` with appropriate highlighting applied.
     fn build_line_with_search_and_title_highlights<'line_str>(
         line_str: &'line_str str,
         matches: &[MatchSpan],
@@ -283,9 +283,9 @@ impl App
                 }
             }
 
-            if let Some(m) = line_str.get(start..end)
+            if let Some(mtc) = line_str.get(start..end)
             {
-                spans.push(Span::styled(m, MATCH_HIGHLIGHT_STYLE));
+                spans.push(Span::styled(mtc, MATCH_HIGHLIGHT_STYLE));
             }
 
             last_end = end;
@@ -1247,7 +1247,7 @@ impl Default for App
 ///
 /// # Returns
 ///
-/// A new rectangle positioned in the center of the parent
+/// A new rectangle positioned in the center of the parent.
 fn centered_rect(
     area: Rect,
     horizontal: Constraint,
