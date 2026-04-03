@@ -683,40 +683,47 @@ impl App
     /// * `area` - The area to render the statusbar in
     fn render_statusbar(&self, frame: &mut Frame, area: Rect)
     {
-        /// Statusbar left section minimum width in columns.
-        const STATUSBAR_LEFT_MIN_COLS: u16 = 40;
-        /// Statusbar middle section minimum width in columns.
-        const STATUSBAR_MIDDLE_MIN_COLS: u16 = 0; // takes remaining space
-        /// Statusbar right section minimum width in columns.
-        const STATUSBAR_RIGHT_MIN_COLS: u16 = 42;
+        // Build text content first so sections are sized to their actual
+        // content.
+        let progress_text = self.build_progress_text();
+        let left_text = format!("RFC {} | {}", self.rfc_number, progress_text);
+        let mode_text = self.get_mode_text();
+        let help_text = self.get_help_text();
+
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "Statusbar text lengths fit in u16"
+        )]
+        let left_len = left_text.chars().count() as u16;
+        #[expect(
+            clippy::cast_possible_truncation,
+            reason = "Statusbar text lengths fit in u16"
+        )]
+        let right_len = help_text.chars().count() as u16;
 
         let [left_section, middle_section, right_section] = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Min(STATUSBAR_LEFT_MIN_COLS),
-                Constraint::Min(STATUSBAR_MIDDLE_MIN_COLS), // Middle takes remaining space
-                Constraint::Min(STATUSBAR_RIGHT_MIN_COLS),
+                Constraint::Length(left_len),
+                Constraint::Fill(1),
+                Constraint::Length(right_len),
             ])
             .flex(Flex::SpaceBetween)
             .areas(area);
 
         // Left section
-        let progress_text = self.build_progress_text();
-        let left_text = format!("RFC {} | {}", self.rfc_number, progress_text);
         let left_statusbar = Paragraph::new(left_text)
             .style(STATUSBAR_STYLE)
             .alignment(Alignment::Left);
         frame.render_widget(left_statusbar, left_section);
 
         // Middle section
-        let mode_text = self.get_mode_text();
         let middle_statusbar = Paragraph::new(mode_text)
             .style(STATUSBAR_STYLE)
             .alignment(Alignment::Center);
         frame.render_widget(middle_statusbar, middle_section);
 
         // Right section
-        let help_text = self.get_help_text();
         let right_statusbar = Paragraph::new(help_text)
             .style(STATUSBAR_STYLE)
             .alignment(Alignment::Right);
