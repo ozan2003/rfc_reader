@@ -9,7 +9,7 @@
 ![Built With Ratatui](https://img.shields.io/badge/Built_With_Ratatui-000?logo=ratatui&logoColor=fff)
 <!--[![Lines of Code](https://tokei.rs/b1/github/ozan2003/rfc_reader?style=flat)](https://github.com/ozan2003/rfc_reader?=style=flat)-->
 
-A tool to read IETF RFCs (Request for Comments) with a TUI, allowing you to fetch, cache, and browse them.
+A terminal-based interface for reading IETF RFCs (Request for Comments), enabling you to fetch, cache, and browse them with ease.
 
 ## Features
 
