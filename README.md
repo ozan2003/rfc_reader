@@ -85,7 +85,7 @@ C:\Users\{YOUR_USERNAME}\AppData\Roaming\rfc_reader\config
 
 ## Contributing
 
-I don't know very well about contribution/PR stuff. Contact me or create a issue if for any issues or suggestions.
+I don't know very well about contribution/PR stuff. Contact me or create an issue if for any issues or suggestions.
 
 ## License
 
