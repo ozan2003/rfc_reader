@@ -43,7 +43,6 @@ const STATUSBAR_STYLE: Style = Style::new()
 
 // UI constants
 /// Minimum terminal width in columns for proper UI rendering.
-// Note: Gotta review when the text are edited.
 const MIN_TERMINAL_WIDTH: u16 = 94;
 /// Minimum terminal height in rows for proper UI rendering.
 const MIN_TERMINAL_HEIGHT: u16 = 15;
@@ -369,7 +368,9 @@ impl App
 
         // Clamp the scroll position instead of panicking
         let y = u16::try_from(self.current_scroll_pos).unwrap_or(u16::MAX);
-        let paragraph = Paragraph::new(text).scroll((y, 0));
+        let paragraph = Paragraph::new(text)
+            .wrap(Wrap { trim: false })
+            .scroll((y, 0));
 
         // Rendering the paragraph happens here
         frame.render_widget(paragraph, content_area);
