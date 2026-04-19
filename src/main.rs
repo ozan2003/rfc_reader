@@ -30,7 +30,7 @@ fn main() -> Result<()>
         // Inform about the cache and log directory
         .after_help(format!(
             "This program caches RFCs to improve performance.\nThe cache is \
-             stored in the following directory: {}\n\nThe the log files are \
+             stored in the following directory: {}\n\nThe log files are \
              stored in: {}",
             cache.cache_dir().display(),
             get_log_files_dir_path().display()
