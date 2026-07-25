@@ -6,6 +6,8 @@ mod app;
 mod event;
 pub mod guard;
 pub mod logging;
+mod render;
+mod search;
 mod toc_panel;
 
 pub use app::{App, AppMode, AppStateFlags};
