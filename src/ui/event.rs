@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::{Context as _, Result};
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
+use log::error;
 
 /// Events that can be processed by the application.
 #[derive(Debug, Clone, Copy)]
@@ -116,9 +117,7 @@ impl EventHandler
                             {},
                             Err(err) =>
                             {
-                                eprintln!(
-                                    "Failed to read terminal event: {err}"
-                                );
+                                error!("Failed to read terminal event: {err}");
                                 break;
                             },
                         }
@@ -127,7 +126,7 @@ impl EventHandler
                     {},
                     Err(err) =>
                     {
-                        eprintln!("Failed to poll terminal events: {err}");
+                        error!("Failed to poll terminal events: {err}");
                         break;
                     },
                 }
