@@ -45,7 +45,9 @@ impl RfcClient
             .timeout_global(Some(duration))
             .tls_config(
                 TlsConfig::builder()
-                    .provider(TlsProvider::NativeTls)
+                    // Bring our own TLS provider to reduce friction with system
+                    // libraries, especially with Linux and OpenSSL.
+                    .provider(TlsProvider::Rustls)
                     .build(),
             )
             .build();
@@ -90,13 +92,12 @@ impl RfcClient
                 format!("Failed to read RFC {rfc_number} content")
             })?;
 
-        Ok(
-            // Remove the unnecesary form feed.
-            response_body
-                .trim()
-                .replace('\x0c', "")
-                .into_boxed_str(),
-        )
+        Ok(response_body
+            .trim()
+            // Remove the unnecesary form feed, they caused artifacts in the
+            // text when displayed before.
+            .replace('\x0c', "")
+            .into_boxed_str())
     }
 
     /// Fetch the RFC index.
