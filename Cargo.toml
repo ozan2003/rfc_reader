@@ -99,7 +99,7 @@ await-holding-refcell-ref = { level = "warn", priority = 0 }
 large-futures = { level = "warn", priority = 0 }
 
 # Panics & Error Handling
-unwrap-used = { level = "warn", priority = 0 }   # Prefer ? or expect
+unwrap-used = { level = "warn", priority = 0 }                 # Prefer ? or expect
 get-unwrap = { level = "warn", priority = 0 }
 panic = { level = "warn", priority = 0 }
 todo = { level = "warn", priority = 0 }
@@ -133,6 +133,7 @@ useless-let-if-seq = { level = "warn", priority = 0 }
 str-to-string = { level = "warn", priority = 0 }
 if-then-some-else-none = { level = "warn", priority = 0 }
 equatable-if-let = { level = "warn", priority = 0 }
+enum_glob_use = { level = "warn", priority = 0 }
 needless-pass-by-ref-mut = { level = "warn", priority = 0 }
 needless-type-cast = { level = "warn", priority = 0 }
 debug-assert-with-mut-call = { level = "warn", priority = 0 }
