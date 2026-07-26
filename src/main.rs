@@ -14,7 +14,7 @@ use rfc_reader::logging::{
     init_logging,
 };
 use rfc_reader::types::RfcNum;
-use rfc_reader::ui::guard::{init_panic_hook, init_tui};
+use rfc_reader::ui::guard::{TerminalGuard, init_panic_hook};
 use rfc_reader::ui::{App, AppMode, AppStateFlags, Event, EventHandler};
 
 fn main() -> Result<()>
@@ -128,8 +128,10 @@ fn main() -> Result<()>
         content
     };
 
-    // Setup necessary components for the app
-    let mut terminal = init_tui()?;
+    // Setup necessary components for the app.
+    // The guard restores the terminal state when dropped at end of main,
+    // its lifetime ends with main.
+    let (_guard, mut terminal) = TerminalGuard::init()?;
 
     let app = App::new(rfc_number, rfc_content);
 

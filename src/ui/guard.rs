@@ -30,26 +30,44 @@ pub struct TerminalGuard;
 
 impl TerminalGuard
 {
-    /// Creates a `TerminalGuard` for TUI setup.
+    /// Sets up the terminal and creates the TUI terminal.
     ///
     /// Configures the terminal by entering raw mode and switching to the
-    /// alternate screen buffer.
+    /// alternate screen buffer, and creates a [`Terminal`] to draw with.
     ///
     /// # Returns
     ///
-    /// The `TerminalGuard`. Holding this instance guarantees terminal
-    /// restoration upon its drop.
+    /// The `TerminalGuard` and the `Terminal`. Holding the guard
+    /// guarantees terminal restoration upon its drop.
     ///
     /// # Errors
     ///
-    /// On failure to enter raw mode or switch screens.
-    pub fn new() -> Result<Self>
+    /// On failure to initialize the terminal, enter raw mode, or switch
+    /// screens.
+    pub fn init()
+    -> Result<(Self, Terminal<impl RatatuiBackend<Error = std::io::Error>>)>
     {
+        // Create the terminal first
+        let terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+
         // Setup terminal and cursor
         enable_raw_mode()?;
-        stdout().execute(SetCursorStyle::BlinkingBar)?;
-        stdout().execute(EnterAlternateScreen)?;
-        Ok(Self)
+
+        // If a later step fails, undo raw mode so the terminal isn't
+        // left broken with no guard alive to restore it.
+        if let Err(err) = stdout().execute(SetCursorStyle::BlinkingBar)
+        {
+            let _ = disable_raw_mode();
+            return Err(err.into());
+        }
+
+        if let Err(err) = stdout().execute(EnterAlternateScreen)
+        {
+            let _ = disable_raw_mode();
+            return Err(err.into());
+        }
+
+        Ok((Self, terminal))
     }
 }
 
@@ -58,73 +76,52 @@ impl Drop for TerminalGuard
     /// Restores the terminal state.
     ///
     /// Automatically called on `TerminalGuard` drop.
-    ///
-    /// Exits raw mode and
-    /// returns to the main screen, ensuring a clean terminal state.
     fn drop(&mut self)
     {
-        // Restore the cursor to visible and default style
-        if let Err(err) = stdout().execute(Show)
-        {
-            error!("Failed to show cursor on drop: {err}");
-        }
-
-        if let Err(err) = stdout().execute(SetCursorStyle::DefaultUserShape)
-        {
-            error!("Failed to reset cursor style: {err}");
-        }
-
-        // Terminal will be borked when failure, at least inform the user
-        if let Err(err) = disable_raw_mode()
-        {
-            error!("Failed to disable raw mode: {err}");
-        }
-
-        if let Err(err) = stdout().execute(LeaveAlternateScreen)
-        {
-            error!("Failed to leave alternate screen: {err}");
-        }
+        restore_terminal();
     }
 }
 
-/// Initialize the terminal.
+/// Restore the terminal to its original state.
 ///
-/// This creates a new terminal and returns it.
-///
-/// # Returns
-///
-/// Returns the terminal.
-///
-/// # Errors
-///
-/// Returns an error if the terminal fails to enter raw mode or leave
-/// alternate screen.
-pub fn init_tui()
--> Result<Terminal<impl RatatuiBackend<Error = std::io::Error>>>
+/// Attempts every step even if earlier ones fail. Errors are logged,
+/// never propagated. Safe to call multiple times.
+fn restore_terminal()
 {
-    // Terminal setup is now handled by TerminalGuard
-    // We just create and return the terminal
-    let backend = CrosstermBackend::new(stdout());
-    // use ? to coerce and return an appropriate `Err`
-    // wrap the resulting value in `Ok` to return `anyhow::Result`
-    Ok(Terminal::new(backend)?)
+    // Restore the cursor to visible and default style
+    if let Err(err) = stdout().execute(Show)
+    {
+        error!("Failed to show cursor: {err}");
+    }
+
+    if let Err(err) = stdout().execute(SetCursorStyle::DefaultUserShape)
+    {
+        error!("Failed to reset cursor style: {err}");
+    }
+
+    // Terminal will be borked when failure, at least inform the user
+    if let Err(err) = disable_raw_mode()
+    {
+        error!("Failed to disable raw mode: {err}");
+    }
+
+    if let Err(err) = stdout().execute(LeaveAlternateScreen)
+    {
+        error!("Failed to leave alternate screen: {err}");
+    }
 }
 
 /// Initialize the panic hook to handle panics.
 ///
-/// # Panics
-///
-/// This will panic if the terminal fails to enter raw mode or leave alternate
-/// screen.
+/// The installed hook restores the terminal to its original state and
+/// logs the panic before chaining to the original hook.
 pub fn init_panic_hook()
 {
     let original_hook = take_hook();
     set_hook(Box::new(move |panic_info| {
-        // Restore terminal to normal state without panicking
-        disable_raw_mode().expect("Failed to disable raw mode");
-        stdout()
-            .execute(LeaveAlternateScreen)
-            .expect("Failed to leave alternate screen");
+        // Never panic here: panicking inside a panic hook aborts the
+        // process immediately.
+        restore_terminal();
 
         error!("Application panicked: {panic_info}");
 

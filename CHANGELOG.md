@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1] - 2026-07-26
+
+## Changed
+
+- Tie `Terminal` and `TerminalGuard` lifetimes together to ensure proper resource management
+in [guard.rs](src/ui/guard.rs).
+
+## Removed
+
+- Remove `init_tui` function in [main.rs](src/main.rs) and the guard field in `App` struct in
+[app.rs](src/ui/app.rs) and move the logic to [guard.rs](src/ui/guard.rs).
+
 ## [0.14.0] - 2026-07-25
 
 ## Changed

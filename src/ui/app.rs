@@ -13,7 +13,6 @@ use crossterm::execute;
 use crossterm::terminal::SetTitle;
 use log::warn;
 
-use super::guard::TerminalGuard;
 use super::search::{collect_search_matches, get_compiled_regex};
 use super::toc_panel::TocPanel;
 use crate::types::{LineNumber, MatchSpan, RfcNum};
@@ -83,13 +82,6 @@ pub struct App
     pub mode: AppMode,
     /// Flags for managing the application state.
     pub app_state: AppStateFlags,
-    /// Handle graceful terminal shutdown.
-    #[expect(
-        dead_code,
-        reason = "Its purpose is its `Drop` implementation, not direct field \
-                  access."
-    )]
-    guard: TerminalGuard,
 
     // Search
     /// Text of the query to search.
@@ -476,9 +468,6 @@ impl Default for App
         const QUERY_TEXT_INITIAL_CAPACITY: usize = 20;
         const QUERY_RESULTS_INITIAL_CAPACITY: usize = 50;
 
-        let guard =
-            TerminalGuard::new().expect("Failed to create terminal guard");
-
         Self {
             rfc_content: Box::from(""),
             rfc_number: NonZeroU16::new(1).expect("its non-zero"),
@@ -487,7 +476,6 @@ impl Default for App
             current_scroll_pos: 0,
             mode: AppMode::Normal,
             app_state: AppStateFlags::default(),
-            guard,
             query_text: String::with_capacity(QUERY_TEXT_INITIAL_CAPACITY),
             query_cursor_pos: 0,
             query_match_line_nums: Vec::with_capacity(
