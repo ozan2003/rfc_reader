@@ -16,6 +16,9 @@ use crate::types::RfcNum;
 const RFC_BASE_URL: &str = "https://www.rfc-editor.org/rfc/rfc";
 /// Specific URL for fetching the RFC index.
 const RFC_INDEX_URL: &str = "https://www.rfc-editor.org/rfc-index.txt";
+/// Maximum allowed response size in bytes (50 MiB) to guard against resource
+/// exhaustion.
+const MAX_RESPONSE_SIZE: u64 = 50 * 1024 * 1024;
 
 /// Client for fetching RFCs.
 ///
@@ -87,6 +90,7 @@ impl RfcClient
         response
             .into_body()
             .into_reader()
+            .take(MAX_RESPONSE_SIZE)
             .read_to_string(&mut response_body)
             .with_context(|| {
                 format!("Failed to read RFC {rfc_number} content")
@@ -124,6 +128,7 @@ impl RfcClient
         response
             .into_body()
             .into_reader()
+            .take(MAX_RESPONSE_SIZE)
             .read_to_string(&mut response_body)
             .context("Failed to read RFC index content")?;
 

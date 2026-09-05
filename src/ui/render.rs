@@ -4,7 +4,6 @@
 //! help overlay, search box, statusbar, and too-small message.
 use std::borrow::Cow;
 
-use crossterm::terminal::size;
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Flex, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -49,18 +48,20 @@ const TOC_SPLIT_CONSTRAINTS: [Constraint; 2] = {
 
 impl App
 {
-    /// Checks if the terminal is too small.
+    /// Checks if the frame area is too small.
+    /// Used primarily for the whole terminal area, but can be used for any
+    /// sub-area.
+    ///
+    /// # Arguments
+    ///
+    /// * `area` - The available frame area
     ///
     /// # Returns
     ///
-    /// A boolean indicating if the terminal is too small.
-    fn is_terminal_too_small() -> bool
+    /// A boolean indicating if the frame is too small.
+    const fn is_frame_too_small(area: Rect) -> bool
     {
-        let (current_width, current_height) =
-            size().expect("Couldn't get terminal size");
-
-        current_width < MIN_TERMINAL_WIDTH ||
-            current_height < MIN_TERMINAL_HEIGHT
+        area.width < MIN_TERMINAL_WIDTH || area.height < MIN_TERMINAL_HEIGHT
     }
 
     /// Builds the RFC text with highlighting for search matches and titles.
@@ -76,10 +77,7 @@ impl App
             .lines()
             .enumerate()
             .map(|(line_num, line_str)| {
-                let is_title = self.rfc_toc_panel
-                                         .entries()
-                                         .binary_search_by(|entry| entry.line_number.cmp(&line_num))
-                                         .is_ok();
+                let is_title = self.rfc_toc_panel.is_title_line(line_num);
 
                 if should_show_search_highlights
                 {
@@ -186,7 +184,7 @@ impl App
         /// Height of the status bar in rows.
         const STATUSBAR_HEIGHT_CONSTRAINT: Constraint = Constraint::Length(1);
 
-        if Self::is_terminal_too_small()
+        if Self::is_frame_too_small(frame.area())
         {
             Self::render_too_small_message(frame);
             return;
@@ -460,8 +458,8 @@ impl App
         /// "Terminal too small" overlay title text.
         const TOO_SMALL_ERROR_TEXT: &str = "Terminal size is too small:";
 
-        let (current_width, current_height) =
-            size().expect("Couldn't get terminal size");
+        let current_width = frame.area().width;
+        let current_height = frame.area().height;
 
         // Determine colors based on whether dimensions meet requirements
         let current_width_color = if current_width >= MIN_TERMINAL_WIDTH

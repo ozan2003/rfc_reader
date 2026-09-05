@@ -284,7 +284,9 @@ where
                     {
                         app.toggle_regex_mode();
                     },
-                    (AppMode::Search, KeyCode::Char(ch)) =>
+                    (AppMode::Search, KeyCode::Char(ch))
+                        if key.modifiers.is_empty() ||
+                            key.modifiers == KeyModifiers::SHIFT =>
                     {
                         app.add_search_char(ch);
                     },
@@ -332,12 +334,8 @@ where
 
                 should_redraw = true;
             },
-            Event::Key(_) =>
+            Event::Key(_) | Event::Tick =>
             {},
-            Event::Tick =>
-            {
-                should_redraw = true;
-            },
             Event::Resize(_, _) =>
             {
                 terminal.clear()?;

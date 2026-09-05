@@ -1,6 +1,8 @@
 //! Manages the RFC Table of Contents panel.
 //!
 //! Displays, navigates, and tracks selection for RFC document entries.
+use std::collections::HashSet;
+
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -42,6 +44,8 @@ pub struct TocPanel
 {
     /// Collection of table of contents entries.
     entries: Vec<TocEntry>,
+    /// Set of line numbers corresponding to `ToC` titles for $O(1)$ lookup.
+    title_line_numbers: HashSet<LineNumber>,
     /// Current selection state.
     state: ListState,
 }
@@ -63,6 +67,10 @@ impl TocPanel
     pub fn new(content: &str) -> Self
     {
         let entries = parsing::parse_toc(content);
+        let title_line_numbers = entries
+            .iter()
+            .map(|entry| entry.line_number)
+            .collect();
         let mut state = ListState::default();
 
         if !entries.is_empty()
@@ -70,7 +78,11 @@ impl TocPanel
             state.select(Some(0));
         }
 
-        Self { entries, state }
+        Self {
+            entries,
+            title_line_numbers,
+            state,
+        }
     }
 
     /// Returns a slice of `ToC` entries, sorted by their first appearance.
@@ -135,9 +147,24 @@ impl TocPanel
     /// Moves the selection to the next entry.
     pub const fn next(&mut self)
     {
+        if self.entries.is_empty()
+        {
+            return;
+        }
+
+        let max_index = self.entries.len().saturating_sub(1);
         if let Some(i) = self.state.selected()
         {
-            self.state.select(Some(i.saturating_add(1)));
+            let next_index = i.saturating_add(1);
+            let bounded_index = if next_index > max_index
+            {
+                max_index
+            }
+            else
+            {
+                next_index
+            };
+            self.state.select(Some(bounded_index));
         }
     }
 
@@ -167,6 +194,23 @@ impl TocPanel
             .selected()
             .and_then(|i| self.entries.get(i))
             .map(|entry| entry.line_number)
+    }
+
+    /// Checks if the given line number corresponds to a table of contents
+    /// title.
+    ///
+    /// # Arguments
+    ///
+    /// * `line_number` - The line number to check
+    ///
+    /// # Returns
+    ///
+    /// `true` if the line is a title, `false` otherwise.
+    #[must_use]
+    pub fn is_title_line(&self, line_number: LineNumber) -> bool
+    {
+        self.title_line_numbers
+            .contains(&line_number)
     }
 }
 
@@ -432,24 +476,20 @@ pub mod parsing
                     let section_num = caps[1].trim();
                     let title = caps[2].trim();
 
-                    // Find actual section in document
-                    let section_pattern = format!(
-                        r"^\s*{}\s+{}",
-                        regex::escape(section_num),
-                        regex::escape(title)
-                    );
-
-                    if let Ok(section_regex) = Regex::new(&section_pattern)
+                    // Look for the section in the document after the ToC
+                    #[expect(
+                        clippy::arithmetic_side_effects,
+                        reason = "LineNumber not expected to overflow"
+                    )]
+                    for (line_number, doc_line) in
+                        lines.enumerate().skip(index + 1)
                     {
-                        // Look for the section in the document after the ToC
-                        #[expect(
-                            clippy::arithmetic_side_effects,
-                            reason = "LineNumber not expected to overflow"
-                        )]
-                        for (line_number, doc_line) in
-                            lines.enumerate().skip(index + 1)
+                        let trimmed = doc_line.trim_start();
+                        if let Some(rest) = trimmed.strip_prefix(section_num)
                         {
-                            if section_regex.is_match(doc_line)
+                            let rest_trimmed = rest.trim_start();
+                            if rest.len() != rest_trimmed.len() &&
+                                rest_trimmed.starts_with(title)
                             {
                                 return Some(TocEntry {
                                     title: format!("{section_num} {title}")
@@ -542,5 +582,72 @@ pub mod parsing
         // First, look for existing ToC. Otherwise, use heuristic.
         parse_toc_existing(content)
             .unwrap_or_else(|| parse_toc_heuristic(content))
+    }
+}
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn test_toc_navigation_bounds()
+    {
+        let mut panel = TocPanel {
+            entries: vec![
+                TocEntry {
+                    title: "Section 1".into(),
+                    line_number: 10,
+                },
+                TocEntry {
+                    title: "Section 2".into(),
+                    line_number: 20,
+                },
+            ],
+            title_line_numbers: [10, 20].into_iter().collect(),
+            state: ListState::default(),
+        };
+        panel.state.select(Some(0));
+
+        assert_eq!(panel.selected_line(), Some(10));
+        panel.next();
+        assert_eq!(panel.selected_line(), Some(20));
+        // Calling next at the end must not overflow or lose selection
+        panel.next();
+        assert_eq!(panel.selected_line(), Some(20));
+
+        panel.previous();
+        assert_eq!(panel.selected_line(), Some(10));
+        // Calling previous at start must not underflow
+        panel.previous();
+        assert_eq!(panel.selected_line(), Some(10));
+    }
+
+    #[test]
+    fn test_toc_empty_panel_navigation()
+    {
+        let mut panel = TocPanel::default();
+        assert_eq!(panel.selected_line(), None);
+        panel.next();
+        assert_eq!(panel.selected_line(), None);
+        panel.previous();
+        assert_eq!(panel.selected_line(), None);
+    }
+
+    #[test]
+    fn test_is_title_line()
+    {
+        let panel = TocPanel {
+            entries: vec![TocEntry {
+                title: "Section 1".into(),
+                line_number: 42,
+            }],
+            title_line_numbers: std::iter::once(42).collect(),
+            state: ListState::default(),
+        };
+
+        assert!(panel.is_title_line(42));
+        assert!(!panel.is_title_line(0));
+        assert!(!panel.is_title_line(43));
     }
 }

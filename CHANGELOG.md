@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-09-05
+
+### Security
+
+- Eliminate `unsafe` block with `unwrap_unchecked` in [logging.rs](src/ui/logging.rs), safely falling back to local data directory if `$XDG_STATE_HOME` cannot be determined.
+- Limit HTTP response stream reading to 50 MiB with `take()` in [client.rs](src/client.rs) to guard against unbounded memory allocation.
+
+### Fixed
+
+- Clamp table of contents navigation in `TocPanel::next()` to prevent out-of-bounds selection index and dropped selection highlight in [toc_panel.rs](src/ui/toc_panel.rs).
+- Filter keyboard modifier combinations in search mode so unhandled control and alt chords are not inserted into the query in [main.rs](src/main.rs).
+- Detect worker shutdown when the shutdown channel sender is dropped in [event.rs](src/ui/event.rs).
+- Replace `crossterm::terminal::size().expect(...)` calls with `frame.area()` in [render.rs](src/ui/render.rs) to prevent panics if the terminal is abruptly disconnected.
+
+### Performance
+
+- Precompute table of contents title line numbers in a `HashSet` in [toc_panel.rs](src/ui/toc_panel.rs) to provide $O(1)$ lookup in [render.rs](src/ui/render.rs) instead of line-by-line binary search on every frame.
+- Replace dynamic regex compilation with string slicing in `try_extract_entry` in [toc_panel.rs](src/ui/toc_panel.rs).
+- Suppress redundant UI redraws on idle `Event::Tick` events in [main.rs](src/main.rs).
+- Eliminate allocator churn during parallel search by removing per-line `shrink_to_fit()` in [search.rs](src/ui/search.rs).
+
+### Added
+
+- Added unit tests for `TocPanel` boundary navigation, empty state handling, and title line lookup in [toc_panel.rs](src/ui/toc_panel.rs).
+
 ## [0.14.1] - 2026-07-26
 
 ## Changed

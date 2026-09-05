@@ -38,13 +38,12 @@ static LOG_FILES_PATH: LazyLock<Box<Path>> = LazyLock::new(|| {
 
     let base_path = if cfg!(target_os = "linux")
     {
-        // SAFETY: This block is only executed if we are using Linux,
-        // as the function only returns 'Some' here.
-        unsafe {
-            // Use `$XDG_STATE_HOME` on linux as its stated
-            // on XDG Base Directory Specification.
-            base_dirs.state_dir().unwrap_unchecked()
-        }
+        // Use `$XDG_STATE_HOME` on linux per XDG Base Directory Specification,
+        // falling back to local data directory if state_dir cannot be
+        // determined.
+        base_dirs
+            .state_dir()
+            .unwrap_or_else(|| base_dirs.data_local_dir())
     }
     else
     {

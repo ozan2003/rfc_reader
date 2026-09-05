@@ -323,7 +323,6 @@ impl RfcCache
 mod tests
 {
     use std::fs::File;
-    use std::io::Write as _;
 
     use tempfile::TempDir;
 

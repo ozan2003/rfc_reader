@@ -3,6 +3,7 @@
 //! Runs an event listener on a separate thread, forwarding all events
 //! to the main application via a channel.
 use std::sync::mpsc;
+use std::sync::mpsc::TryRecvError;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
@@ -75,8 +76,10 @@ impl EventHandler
 
             loop
             {
-                // Check for shutdown signal from the `shutdown_receiver`
-                if shutdown_receiver.try_recv().is_ok()
+                // Check for shutdown signal from the `shutdown_receiver`.
+                // Terminate if a signal was received or if the sender was
+                // dropped.
+                if shutdown_receiver.try_recv() != Err(TryRecvError::Empty)
                 {
                     break;
                 }

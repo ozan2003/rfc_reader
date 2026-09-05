@@ -75,8 +75,7 @@ pub(super) fn collect_search_matches(
                 }));
             }
 
-            let mut all_matches: Vec<(LineNumber, Vec<MatchSpan>)> =
-                Vec::with_capacity(handles.len());
+            let mut all_matches: Vec<(LineNumber, Vec<MatchSpan>)> = Vec::new();
 
             for handle in handles
             {
@@ -131,7 +130,6 @@ fn collect_search_matches_serial(
         {
             // Sort ranges defensively to keep deterministic highlight order.
             matches_in_line.sort_unstable_by_key(|span: &MatchSpan| span.start);
-            matches_in_line.shrink_to_fit();
 
             results.push((
                 line_offset.saturating_add(relative_line_num),
