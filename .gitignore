@@ -63,3 +63,5 @@ gemini-debug.log
 # Skills
 .agents/
 skills-lock.json
+
+.ooda
