@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-09-11
+
+### Fixed
+
+- Stop table of contents parsing at the first body section heading so body
+  text and numbered list items no longer leak into the `ToC` in
+  [toc_panel.rs](src/ui/toc_panel.rs).
+- Strip trailing page numbers on `ToC` rows whether dot-delimited or
+  whitespace-separated, so documents without dot leaders no longer silently
+  fall back to the heuristic parser in [toc_panel.rs](src/ui/toc_panel.rs).
+
+### Changed
+
+- Make `ToC` header detection case-insensitive and support the numbered form
+  in [toc_panel.rs](src/ui/toc_panel.rs).
+- Match appendix rows case-insensitively, including the `APPENDIX A:` form in
+  [toc_panel.rs](src/ui/toc_panel.rs).
+- Reject punctuation-only and digit-bearing lines (for example "-----" or
+  "RFC 9999") from the heuristic `ToC` fallback in
+  [toc_panel.rs](src/ui/toc_panel.rs).
+- Deduplicate identical `ToC` rows in [toc_panel.rs](src/ui/toc_panel.rs).
+
+### Added
+
+- Added `ToC` parsing regression tests for dot leaders, whitespace page
+  numbers, page-less rows, body-heading stop, case-insensitive headers, and
+  duplicate rows in [toc_panel.rs](src/ui/toc_panel.rs).
+
 ## [0.15.0] - 2026-09-05
 
 ### Security

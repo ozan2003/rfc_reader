@@ -218,64 +218,72 @@ impl TocPanel
 /// contents.
 pub mod parsing
 {
+    use std::collections::HashSet;
     use std::str::Lines;
     use std::sync::LazyLock;
 
     use super::{LineNumber, Regex, TocEntry};
 
-    // Static regex patterns for better performance
-    //
-    // Note: Don't trim the leading whitespace or eat the other chars
-    // before beginning of the line so that we can distinguish the actual
-    // ToC entries from the section headings by preserving the indentation.
+    // Static regex patterns for better performance.
 
     /// Matches lines that announce the start of a table of contents block.
     ///
-    /// Supported variants:
+    /// Case-insensitive; supported variants:
     /// - `Table of Contents`
     /// - `Contents`
-    /// - `TABLE OF CONTENTS`
-    /// - Numbered form like `3 Table of Contents`
+    /// - Numbered form like `3. Table of Contents`
     static TOC_HEADER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        let toc_entries = [
-            "(?:Table of Contents|Contents)", // Standard header
-            "(?:TABLE OF CONTENTS)",          // All caps variant
-            r"(?:\d+\.?\s+Table of Contents)", // Numbered ToC section
-        ];
-        let pattern = format!("^({})$", toc_entries.join("|"));
-        Regex::new(&pattern).expect("Invalid TOC header regex")
+        Regex::new(r"(?i)^(?:\d+\.?\s+)?(?:Table of Contents|Contents)$")
+            .expect("Invalid TOC header regex")
     });
 
     /// Patterns for individual `ToC` rows.
     ///
     /// Capture groups are intentionally consistent across patterns:
     /// - group 1: section label (for example `1.2` or `Appendix A`)
-    /// - group 2: section title text
+    /// - group 2: section title text, with any trailing page number stripped
     ///
-    /// Delimited page numbers (".... 17") are optional and ignored.
-    /// Non-`ToC` sections such as acknowledgements are intentionally excluded.
+    /// A trailing page number is optional and may be dot-delimited
+    /// (".... 17") or whitespace-separated (" 17"); modern RFCs such as
+    /// RFC 9000 omit it entirely.
     static TOC_ENTRY_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
-        // Account for the leading whitespace in the entries
         vec![
             // Numbered entry, for example:
             // `1. Introduction..................5`
             // `2.1  Terminology`
-            Regex::new(r"^\s*(\d+(?:\.\d+)*\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
-                .expect("Invalid TOC entry regex"),
+            // `1   Introduction ........ 7`
+            Regex::new(
+                r"^\s*(\d+(?:\.\d+)*\.?)\s+(.+?)(?:\s*\.{2,}\s*\d+|\s+\d+)?\s*$",
+            )
+            .expect("Invalid TOC entry regex"),
             // Appendix entry, for example:
             // `Appendix A. Packet Format`
-            Regex::new(r"^\s*(Appendix\s+[A-Z]\.?)\s+(.*?)(?:\.{2,}\s*\d+)?$")
-                .expect("Invalid appendix regex"),
+            // `APPENDIX A:  Examples & Scenarios .... 34`
+            Regex::new(
+                r"(?i)^\s*(Appendix\s+[A-Z])\.?:?\s+(.+?)(?:\s*\.{2,}\s*\d+|\s+\d+)?\s*$",
+            )
+            .expect("Invalid appendix regex"),
         ]
     });
 
-    /// Matches numbered section headings in the body.
+    /// Matches numbered section headings at the start of the line.
     ///
-    /// This is used as a stop signal while parsing `ToC` lines: once a body
-    /// heading appears after valid `ToC` entries, the parser exits `ToC` mode.
+    /// Used together with [`PAGE_NUMBER_REGEX`] as a stop signal: a column-0
+    /// numbered heading with no page number is the start of the body, not a
+    /// `ToC` row.
     static SECTION_HEADING_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r"^(\d+(?:\.\d+)*\.)\s+\S")
+        Regex::new(r"^(\d+(?:\.\d+)*\.?)\s+\S")
             .expect("Invalid section heading regex")
+    });
+
+    /// Matches a trailing page number, dot-delimited or whitespace-separated.
+    ///
+    /// `ToC` rows carry a page number; body section headings do not. In
+    /// formats where both start at column 0 (e.g. RFC 791) this is the only
+    /// way to tell them apart.
+    static PAGE_NUMBER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"(?:\.{2,}\s*|\s+)\d+\s*$")
+            .expect("Invalid page number regex")
     });
 
     /// Parses the document by existing `ToC`.
@@ -290,13 +298,10 @@ pub mod parsing
     /// or `None` if no `ToC` is found.
     fn parse_toc_existing(content: &str) -> Option<Vec<TocEntry>>
     {
-        let lines = content.lines();
-
-        // Find ToC start
-        let start_index = find_toc_start(lines.clone())?;
-
-        // Process ToC entries
-        let entries = extract_toc_entries(&lines, start_index);
+        // Skip the header line itself; entries begin on the following line.
+        let header_index = find_toc_start(content.lines())?;
+        let entries =
+            extract_toc_entries(content, header_index.saturating_add(1));
 
         if entries.is_empty()
         {
@@ -308,27 +313,22 @@ pub mod parsing
         }
     }
 
-    /// Find the start of `ToC` section.
+    /// Find the index of the `ToC` header line.
     ///
     /// # Arguments
     ///
     /// * `lines` - The lines of the document
-    /// * `toc_regex` - The regex to find the `ToC` header
     ///
     /// # Returns
     ///
-    /// The index of the start of the `ToC` section, or `None` if no `ToC` is
+    /// The 0-based index of the `ToC` header, or `None` if no header is
     /// found.
     fn find_toc_start(lines: Lines<'_>) -> Option<LineNumber>
     {
         lines.enumerate().find_map(|(index, line)| {
-            #[expect(
-                clippy::arithmetic_side_effects,
-                reason = "LineNumber not expected to overflow"
-            )]
             TOC_HEADER_REGEX
                 .is_match(line.trim())
-                .then(|| index + 1) // Skip the `ToC` header line
+                .then_some(index)
         })
     }
 
@@ -336,171 +336,164 @@ pub mod parsing
     ///
     /// # Arguments
     ///
-    /// * `lines` - The lines of the document
-    /// * `start_index` - The index of the start of the `ToC` section
+    /// * `content` - The document content
+    /// * `start_index` - The 0-based index of the first line after the `ToC`
+    ///   header
     ///
     /// # Returns
     ///
     /// A vector of `TocEntry` instances representing the document's structure.
     fn extract_toc_entries(
-        lines: &Lines<'_>,
+        content: &str,
         start_index: LineNumber,
     ) -> Vec<TocEntry>
     {
         let mut entries = Vec::new();
-        let mut consecutive_empty_lines = 0;
-        let mut has_found_entries = false;
-        let mut lines_without_entries = 0;
+        let mut consecutive_empty_lines = 0usize;
+        let mut non_entry_lines = 0usize;
 
-        for (index, trimmed_line) in lines
-            .clone()
+        for (index, line) in content
+            .lines()
             .enumerate()
             .skip(start_index)
-            .map(|(i, line)| (i, line.trim_end()))
+            .map(|(line_index, raw)| (line_index, raw.trim_end()))
         {
-            // Check stopping conditions
-            if should_stop_parsing(
-                trimmed_line,
-                has_found_entries,
-                &mut consecutive_empty_lines,
-                &mut lines_without_entries,
-            )
+            if line.is_empty()
+            {
+                consecutive_empty_lines =
+                    consecutive_empty_lines.saturating_add(1);
+                if consecutive_empty_lines >= 5 && !entries.is_empty()
+                {
+                    break;
+                }
+                continue;
+            }
+            consecutive_empty_lines = 0;
+
+            // A column-0 numbered heading with no page number is the start of
+            // the body, not a `ToC` row.
+            if !entries.is_empty() && is_body_heading(line)
             {
                 break;
             }
 
-            // Try to match and extract entries
-            if let Some(entry) =
-                try_extract_entry(trimmed_line, lines.clone(), index)
+            if let Some(entry) = try_extract_entry(content, line, index)
             {
-                has_found_entries = true;
                 entries.push(entry);
+            }
+            else if entries.is_empty()
+            {
+                // Bail out if the header isn't followed by a real `ToC`.
+                non_entry_lines = non_entry_lines.saturating_add(1);
+                if non_entry_lines > 30
+                {
+                    break;
+                }
             }
         }
 
         entries
     }
 
-    /// Check if we should stop parsing the `ToC`.
+    /// Checks whether `line` is a body section heading rather than a `ToC`
+    /// row.
     ///
-    /// # Arguments
-    ///
-    /// * `trimmed_line` - The trimmed line to check
-    /// * `has_found_entries` - Whether we have found any entries
-    /// * `consecutive_empty_lines` - The number of consecutive empty lines
-    /// * `lines_without_entries` - The number of lines without entries
-    ///
-    /// # Returns
-    ///
-    /// A boolean indicating whether we should stop parsing the `ToC`.
-    fn should_stop_parsing(
-        trimmed_line: &str,
-        has_found_entries: bool,
-        consecutive_empty_lines: &mut u8,
-        lines_without_entries: &mut u8,
-    ) -> bool
+    /// A body heading starts at column 0 (no leading whitespace), matches a
+    /// numbered heading, and carries no page number. `ToC` rows in formats
+    /// that don't indent (e.g. RFC 791) still carry a page number, so they
+    /// are excluded.
+    fn is_body_heading(line: &str) -> bool
     {
-        // 1. Check for section headings outside ToC
-        let does_look_like_section =
-            SECTION_HEADING_REGEX.is_match(trimmed_line);
-        let is_matching_toc_pattern = TOC_ENTRY_PATTERNS
-            .iter()
-            .any(|re| re.is_match(trimmed_line));
-
-        if does_look_like_section &&
-            !is_matching_toc_pattern &&
-            has_found_entries
-        {
-            return true;
-        }
-
-        // 2. Check empty lines
-        if trimmed_line.is_empty()
-        {
-            *consecutive_empty_lines =
-                consecutive_empty_lines.saturating_add(1);
-            if *consecutive_empty_lines >= 5 && has_found_entries
-            {
-                return true;
-            }
-        }
-        else
-        {
-            *consecutive_empty_lines = 0;
-        }
-
-        // 3. Check timeout for entries
-        if has_found_entries
-        {
-            // Reset counter when we have found entries
-            *lines_without_entries = 0;
-        }
-        else
-        {
-            *lines_without_entries = lines_without_entries.saturating_add(1);
-            if *lines_without_entries > 30
-            {
-                return true;
-            }
-        }
-
-        false
+        SECTION_HEADING_REGEX.is_match(line) &&
+            !PAGE_NUMBER_REGEX.is_match(line)
     }
 
     /// Try to extract a `ToC` entry from a line.
     ///
     /// # Arguments
     ///
-    /// * `trimmed_line` - The trimmed line to check
-    /// * `lines` - The lines of the document
-    /// * `index` - The index of the line
+    /// * `content` - The document content
+    /// * `line` - The line to check
+    /// * `index` - The 0-based index of the line
     ///
     /// # Returns
     ///
     /// A `TocEntry` instance representing the extracted entry, or `None` if no
     /// entry is found.
     fn try_extract_entry(
-        trimmed_line: &str,
-        lines: Lines<'_>,
+        content: &str,
+        line: &str,
         index: LineNumber,
     ) -> Option<TocEntry>
     {
         for entry_regex in TOC_ENTRY_PATTERNS.iter()
         {
-            if let Some(caps) = entry_regex.captures(trimmed_line)
+            if let Some(caps) = entry_regex.captures(line)
             {
-                // Ensure the regex captures both the section number and the
-                // title
+                // Both capture groups must be present (group 0 is the full
+                // match).
                 if caps.len() >= 3
                 {
                     let section_num = caps[1].trim();
                     let title = caps[2].trim();
 
-                    // Look for the section in the document after the ToC
-                    #[expect(
-                        clippy::arithmetic_side_effects,
-                        reason = "LineNumber not expected to overflow"
-                    )]
-                    for (line_number, doc_line) in
-                        lines.enumerate().skip(index + 1)
+                    if let Some(line_number) =
+                        find_body_heading(content, index, section_num, title)
                     {
-                        let trimmed = doc_line.trim_start();
-                        if let Some(rest) = trimmed.strip_prefix(section_num)
-                        {
-                            let rest_trimmed = rest.trim_start();
-                            if rest.len() != rest_trimmed.len() &&
-                                rest_trimmed.starts_with(title)
-                            {
-                                return Some(TocEntry {
-                                    title: format!("{section_num} {title}")
-                                        .into(),
-                                    line_number,
-                                });
-                            }
-                        }
+                        return Some(TocEntry {
+                            title: format!("{section_num} {title}").into(),
+                            line_number,
+                        });
                     }
                 }
                 break; // Stop checking patterns if one matched
+            }
+        }
+        None
+    }
+
+    /// Find the body heading line number for a `ToC` entry.
+    ///
+    /// Searches forward from the entry's line for a heading whose section
+    /// label and title match.
+    ///
+    /// # Arguments
+    ///
+    /// * `content` - The document content
+    /// * `after_index` - The 0-based index of the `ToC` entry line
+    /// * `section_num` - The section label from the `ToC` (e.g. `1.2`)
+    /// * `title` - The section title from the `ToC`
+    ///
+    /// # Returns
+    ///
+    /// The 0-based index of the matching body heading, or `None` if no match
+    /// is found.
+    fn find_body_heading(
+        content: &str,
+        after_index: LineNumber,
+        section_num: &str,
+        title: &str,
+    ) -> Option<LineNumber>
+    {
+        for (line_number, doc_line) in content
+            .lines()
+            .enumerate()
+            .skip(after_index.saturating_add(1))
+        {
+            let trimmed = doc_line.trim_start();
+            let Some(rest) = trimmed.strip_prefix(section_num)
+            else
+            {
+                continue;
+            };
+            // Strip any `: ` or `. ` separator that may follow the label (for
+            // appendix entries) plus surrounding whitespace.
+            let rest = rest.trim_start_matches(|ch: char| {
+                ch.is_whitespace() || ch == ':' || ch == '.'
+            });
+            if rest.starts_with(title)
+            {
+                return Some(line_number);
             }
         }
         None
@@ -527,45 +520,86 @@ pub mod parsing
     /// found.
     fn parse_toc_heuristic(content: &str) -> Vec<TocEntry>
     {
-        let mut entries = Vec::new();
-        let mut section_pattern = false;
+        let mut numbered = Vec::new();
+        let mut all_caps = Vec::new();
 
         for (line_number, line) in content.lines().enumerate()
         {
             let line = line.trim_end();
 
-            // Check for section headers in typical RFC format
-            if line.starts_with(|ch: char| ch.is_ascii_digit()) &&
-                line.contains('.')
+            if is_numbered_heading(line)
             {
-                let parts: Vec<&str> = line.splitn(2, '.').collect();
-                #[expect(
-                    clippy::indexing_slicing,
-                    reason = "We already checked the length"
-                )]
-                if parts.len() == 2 && !parts[0].contains(' ')
-                {
-                    entries.push(TocEntry {
-                        title: line.into(),
-                        line_number,
-                    });
-                    section_pattern = true;
-                }
+                numbered.push(TocEntry {
+                    title: line.into(),
+                    line_number,
+                });
             }
-            // If we didn't find standard section patterns, look for capitalized
-            // headings
-            else if !section_pattern &&
-                line.len() > 3 &&
-                line == line.to_uppercase()
+            else if is_all_caps_heading(line)
             {
-                entries.push(TocEntry {
+                all_caps.push(TocEntry {
                     title: line.into(),
                     line_number,
                 });
             }
         }
 
-        entries
+        // Numbered headings are the reliable signal; fall back to all-caps
+        // headings only when the document has none.
+        if numbered.is_empty()
+        {
+            all_caps
+        }
+        else
+        {
+            numbered
+        }
+    }
+
+    /// Checks whether `line` is a numbered section heading such as
+    /// `1. Introduction` or `1.2  Terminology`.
+    fn is_numbered_heading(line: &str) -> bool
+    {
+        if !line.starts_with(|ch: char| ch.is_ascii_digit())
+        {
+            return false;
+        }
+
+        let Some((label, _)) = line.split_once('.')
+        else
+        {
+            return false;
+        };
+
+        !label.contains(' ') &&
+            label
+                .chars()
+                .all(|ch: char| ch.is_ascii_digit())
+    }
+
+    /// Checks whether `line` looks like an all-caps section heading.
+    ///
+    /// Requires at least one alphabetic character, no lowercase letters, and
+    /// no digits (to exclude "RFC 9999", page footers, and table numbers).
+    /// Punctuation-only separators such as "-----" are rejected.
+    fn is_all_caps_heading(line: &str) -> bool
+    {
+        let mut has_alpha = false;
+        for ch in line.chars()
+        {
+            if ch.is_ascii_digit()
+            {
+                return false;
+            }
+            if ch.is_alphabetic()
+            {
+                has_alpha = true;
+                if ch.is_lowercase()
+                {
+                    return false;
+                }
+            }
+        }
+        has_alpha && line.len() > 3
     }
 
     /// Parses the document to extract a table of contents.
@@ -580,8 +614,14 @@ pub mod parsing
     pub fn parse_toc(content: &str) -> Vec<TocEntry>
     {
         // First, look for existing ToC. Otherwise, use heuristic.
-        parse_toc_existing(content)
-            .unwrap_or_else(|| parse_toc_heuristic(content))
+        let mut entries = parse_toc_existing(content)
+            .unwrap_or_else(|| parse_toc_heuristic(content));
+
+        // Drop duplicate rows (the same section listed twice).
+        let mut seen: HashSet<Box<str>> = HashSet::new();
+        entries.retain(|entry| seen.insert(entry.title.clone()));
+
+        entries
     }
 }
 
@@ -589,6 +629,172 @@ pub mod parsing
 mod tests
 {
     use super::*;
+
+    #[test]
+    fn test_parse_toc_dot_leaders()
+    {
+        // RFC 2616-style: indented rows, dot leaders, body headings at
+        // column 0 with no trailing dot on the top-level number.
+        #[rustfmt::skip]
+        let content = concat!(
+            "RFC 9999\n\n",
+            "Table of Contents\n\n",
+            "   1   Introduction ...................................................7\n",
+            "   1.1    Purpose......................................................8\n\n",
+            "1 Introduction\n\n",
+            "1.1 Purpose\n",
+        );
+
+        let entries = parsing::parse_toc(content);
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| (entry.title.as_ref(), entry.line_number))
+                .collect::<Vec<_>>(),
+            vec![("1 Introduction", 7), ("1.1 Purpose", 9)],
+        );
+    }
+
+    #[test]
+    fn test_parse_toc_whitespace_page_numbers()
+    {
+        // No dot leaders: page number separated by plain whitespace. The
+        // title must not swallow the page number (the review's H2 case).
+        let content = concat!(
+            "RFC 9999\n\n",
+            "Table of Contents\n\n",
+            "1. Alpha 3\n",
+            "2. Beta 5\n\n",
+            "1. Alpha\n\n",
+            "2. Beta\n",
+        );
+
+        let entries = parsing::parse_toc(content);
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| (entry.title.as_ref(), entry.line_number))
+                .collect::<Vec<_>>(),
+            vec![("1. Alpha", 7), ("2. Beta", 9)],
+        );
+    }
+
+    #[test]
+    fn test_parse_toc_no_page_numbers()
+    {
+        // RFC 9000-style: indented rows with no page number; the body
+        // headings are identical except for the indentation.
+        let content = concat!(
+            "RFC 9999\n\n",
+            "Table of Contents\n\n",
+            "   1.  Overview\n",
+            "     1.1.  Document Structure\n",
+            "   2.  Streams\n\n",
+            "1.  Overview\n\n",
+            "1.1.  Document Structure\n\n",
+            "2.  Streams\n",
+        );
+
+        let entries = parsing::parse_toc(content);
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| (entry.title.as_ref(), entry.line_number))
+                .collect::<Vec<_>>(),
+            vec![
+                ("1. Overview", 8),
+                ("1.1. Document Structure", 10),
+                ("2. Streams", 12),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_parse_toc_stops_at_body_heading()
+    {
+        // The review's H1 case: numbered list items that repeat later in the
+        // body must not leak into the ToC.
+        let content = concat!(
+            "RFC 9999\n\n",
+            "Table of Contents\n\n",
+            "   1.  Alpha ............ 3\n",
+            "   2.  Beta ............. 5\n\n",
+            "1.  Alpha\n",
+            "   Intro.\n\n",
+            "   2.  Pick option A\n",
+            "   3.  Pick option B\n\n",
+            "2.  Beta\n\n",
+            "   2.  Pick option A\n",
+            "   3.  Pick option B\n",
+        );
+
+        let entries = parsing::parse_toc(content);
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| (entry.title.as_ref(), entry.line_number))
+                .collect::<Vec<_>>(),
+            vec![("1. Alpha", 7), ("2. Beta", 13)],
+        );
+    }
+
+    #[test]
+    fn test_parse_toc_header_case_insensitive()
+    {
+        for header in ["TABLE OF CONTENTS", "Contents"]
+        {
+            let content = format!(
+                "RFC 9999\n\n{header}\n\n   1.  Alpha .... 2\n\n1.  Alpha\n",
+            );
+
+            let entries = parsing::parse_toc(&content);
+
+            assert_eq!(entries.len(), 1);
+            let entry = entries.first().expect("one entry");
+            assert_eq!(entry.title.as_ref(), "1. Alpha");
+            assert_eq!(entry.line_number, 6);
+        }
+    }
+
+    #[test]
+    fn test_parse_toc_heuristic_rejects_punctuation()
+    {
+        // No ToC header, so the heuristic runs. Separator lines must not
+        // become entries.
+        let content = "Intro\n\n-----\n\n1. Alpha\n\n-----\n\n2. Beta\n";
+
+        let entries = parsing::parse_toc(content);
+
+        assert_eq!(
+            entries
+                .iter()
+                .map(|entry| entry.title.as_ref())
+                .collect::<Vec<_>>(),
+            vec!["1. Alpha", "2. Beta"],
+        );
+    }
+
+    #[test]
+    fn test_parse_toc_dedupes_duplicate_rows()
+    {
+        let content = concat!(
+            "RFC 9999\n\n",
+            "Table of Contents\n\n",
+            "   1.  Alpha .... 2\n",
+            "   1.  Alpha .... 2\n\n",
+            "1.  Alpha\n",
+        );
+
+        let entries = parsing::parse_toc(content);
+
+        assert_eq!(entries.len(), 1);
+        let entry = entries.first().expect("one entry");
+        assert_eq!(entry.title.as_ref(), "1. Alpha");
+    }
 
     #[test]
     fn test_toc_navigation_bounds()
