@@ -1,3 +1,6 @@
+//! The `rfc_reader` binary: command line handling, terminal setup, and the
+//! render/event loop.
+
 use std::time::Duration;
 
 use anyhow::{Context as _, Result, anyhow, bail};

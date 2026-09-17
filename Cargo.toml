@@ -20,6 +20,7 @@ keywords = [
     "command-line",
     "ratatui",
 ]
+categories = ["command-line-utilities", "text-processing"]
 license-file = "LICENSE"
 
 
@@ -139,6 +140,66 @@ dbg-macro = { level = "warn", priority = 0 }
 allow-attributes = { level = "warn", priority = 0 }
 allow-attributes-without-reason = { level = "warn", priority = 0 }
 arithmetic_side_effects = { level = "warn", priority = 0 }
+
+# Restriction
+wildcard_enum_match_arm = { level = "warn", priority = 0 }           # exhaustive matches on state enums
+use_debug = { level = "warn", priority = 0 }                         # Debug formatting in rendered output
+iter_over_hash_type = { level = "warn", priority = 0 }               # deterministic iteration order
+precedence_bits = { level = "warn", priority = 0 }                   # bitflag/shift mixing
+suspicious_xor_used_as_pow = { level = "warn", priority = 0 }
+string_add = { level = "warn", priority = 0 }                        # i don't like operator overloading
+string_lit_chars_any = { level = "warn", priority = 0 }
+filetype_is_file = { level = "warn", priority = 0 }                  # symlinks and special files
+verbose_file_reads = { level = "warn", priority = 0 }
+pathbuf_init_then_push = { level = "warn", priority = 0 }
+partial_pub_fields = { level = "warn", priority = 0 }
+same_name_method = { level = "warn", priority = 0 }
+rest_pat_in_fully_bound_structs = { level = "warn", priority = 0 }
+unneeded_field_pattern = { level = "warn", priority = 0 }
+ref_patterns = { level = "warn", priority = 0 }
+try_err = { level = "warn", priority = 0 }
+return_and_then = { level = "warn", priority = 0 }
+redundant_type_annotations = { level = "warn", priority = 0 }
+empty_structs_with_brackets = { level = "warn", priority = 0 }
+empty_enum_variants_with_brackets = { level = "warn", priority = 0 }
+empty_drop = { level = "warn", priority = 0 }
+deref_by_slicing = { level = "warn", priority = 0 }
+missing_asserts_for_indexing = { level = "warn", priority = 0 }
+exit = { level = "warn", priority = 0 }                              # exit() skips TerminalGuard::drop
+
+# Manifest hygiene
+wildcard_dependencies = { level = "warn", priority = 0 }
+negative_feature_names = { level = "warn", priority = 0 }
+redundant_feature_names = { level = "warn", priority = 0 }
+cargo_common_metadata = { level = "warn", priority = 0 }
+
+# Nursery
+literal_string_with_formatting_args = { level = "warn", priority = 0 }
+suspicious_operation_groupings = { level = "warn", priority = 0 }
+unused_peekable = { level = "warn", priority = 0 }
+clear_with_drain = { level = "warn", priority = 0 }
+iter_with_drain = { level = "warn", priority = 0 }
+doc_link_code = { level = "warn", priority = 0 }
+type_repetition_in_bounds = { level = "warn", priority = 0 }
+trait_duplication_in_bounds = { level = "warn", priority = 0 }
+nonstandard_macro_braces = { level = "warn", priority = 0 }
+
+# rustc lints (not exposed through clippy)
+[lints.rust]
+unsafe-code = "forbid"
+missing-docs = "warn"
+missing-copy-implementations = "warn"
+trivial-casts = "warn"
+trivial-numeric-casts = "warn"
+variant-size-differences = "warn"
+single-use-lifetimes = "warn"
+unused-lifetimes = "warn"
+unused-macro-rules = "warn"
+meta-variable-misuse = "warn"
+unit-bindings = "warn"
+absolute-paths-not-starting-with-crate = "warn"
+if-let-rescope = "warn"
+tail-expr-drop-order = "warn"
 
 # The profile that 'dist' will build with
 [profile.dist]
