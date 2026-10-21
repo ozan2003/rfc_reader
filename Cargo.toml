@@ -25,22 +25,22 @@ license-file = "LICENSE"
 
 
 [dependencies]
-anyhow = "1.0.102"
-bitflags = "2.13.0"
-cached = "2.0.2"
-clap = { version = "4.6.1", features = ["cargo"] }
-# i'm only using event handling, no need for the serde, event-stream stuff
+anyhow = "1.0.104"
+bitflags = "2.13.2"
+cached = "4.0.2"
+clap = { version = "4.6.7", features = ["cargo"] }
+# i'm only using event handling, no need for the serde, event_stream stuff
 crossterm = { version = "0.29.0", default-features = false, features = [
     "events",
 ] }
 directories = "6.0.0"
-env_logger = "0.11.10"
+env_logger = "0.11.11"
 file-rotate = "0.8.0"
-log = "0.4.32"
-ratatui = "0.30.1"
-regex = "1.12.4"
-textwrap = "0.16.2"
-ureq = { version = "3.3.0" }
+log = "0.4.34"
+ratatui = "0.30.2"
+regex = "1.13.1"
+textwrap = "0.16.4"
+ureq = { version = "3.4.2" }
 
 [dev-dependencies]
 tempfile = "3.27.0"
@@ -55,90 +55,90 @@ complexity = { level = "warn", priority = -5 }
 suspicious = { level = "warn", priority = -6 }
 
 # Documentation
-doc-paragraphs-missing-punctuation = { level = "warn", priority = -8 }
-missing-docs-in-private-items = { level = "warn", priority = -9 }
-too-long-first-doc-paragraph = { level = "warn", priority = -10 }
+doc_paragraphs_missing_punctuation = { level = "warn", priority = -8 }
+missing_docs_in_private_items = { level = "warn", priority = -9 }
+too_long_first_doc_paragraph = { level = "warn", priority = -10 }
 
 # Memory & Safety
-undocumented-unsafe-blocks = { level = "deny", priority = -10 }
-unnecessary-safety-doc = { level = "warn", priority = -10 }
-unnecessary-safety-comment = { level = "warn", priority = 0 }
-multiple-unsafe-ops-per-block = { level = "warn", priority = 0 }
-mem-forget = { level = "warn", priority = 0 }
-as-ptr-cast-mut = { level = "warn", priority = 0 }
-rc-mutex = { level = "warn", priority = 0 }
+undocumented_unsafe_blocks = { level = "deny", priority = -10 }
+unnecessary_safety_doc = { level = "warn", priority = -10 }
+unnecessary_safety_comment = { level = "warn", priority = 0 }
+multiple_unsafe_ops_per_block = { level = "warn", priority = 0 }
+mem_forget = { level = "warn", priority = 0 }
+as_ptr_cast_mut = { level = "warn", priority = 0 }
+rc_mutex = { level = "warn", priority = 0 }
 
 # Floating Point Math
-lossy-float-literal = { level = "warn", priority = 0 }
-float-cmp = { level = "warn", priority = 0 }
-float-cmp-const = { level = "warn", priority = 0 }
-while-float = { level = "warn", priority = 0 }
-imprecise-flops = { level = "warn", priority = 0 }
-suboptimal-flops = { level = "warn", priority = 0 }
-cast-sign-loss = { level = "warn", priority = 0 }
-invalid-upcast-comparisons = { level = "warn", priority = 0 }
+lossy_float_literal = { level = "warn", priority = 0 }
+float_cmp = { level = "warn", priority = 0 }
+float_cmp_const = { level = "warn", priority = 0 }
+while_float = { level = "warn", priority = 0 }
+imprecise_flops = { level = "warn", priority = 0 }
+suboptimal_flops = { level = "warn", priority = 0 }
+cast_sign_loss = { level = "warn", priority = 0 }
+invalid_upcast_comparisons = { level = "warn", priority = 0 }
 cast_possible_wrap = { level = "warn", priority = 0 }
 cast_precision_loss = { level = "warn", priority = 0 }
 cast_possible_truncation = { level = "warn", priority = 0 }
 
 # Collections & Iterators
-string-slice = { level = "warn", priority = 0 }
-collection-is-never-read = { level = "warn", priority = 0 }
-iter-on-empty-collections = { level = "warn", priority = 0 }
-iter-on-single-items = { level = "warn", priority = 0 }
-needless-collect = { level = "warn", priority = 0 }
-search-is-some = { level = "warn", priority = 0 }
-indexing-slicing = { level = "warn", priority = 0 }
-iter-not-returning-iterator = { level = "warn", priority = 0 }
+string_slice = { level = "warn", priority = 0 }
+collection_is_never_read = { level = "warn", priority = 0 }
+iter_on_empty_collections = { level = "warn", priority = 0 }
+iter_on_single_items = { level = "warn", priority = 0 }
+needless_collect = { level = "warn", priority = 0 }
+search_is_some = { level = "warn", priority = 0 }
+indexing_slicing = { level = "warn", priority = 0 }
+iter_not_returning_iterator = { level = "warn", priority = 0 }
 
 # Async & Concurrency
-await-holding-lock = { level = "warn", priority = 0 }
-await-holding-refcell-ref = { level = "warn", priority = 0 }
-large-futures = { level = "warn", priority = 0 }
+await_holding_lock = { level = "warn", priority = 0 }
+await_holding_refcell_ref = { level = "warn", priority = 0 }
+large_futures = { level = "warn", priority = 0 }
 
 # Panics & Error Handling
-unwrap-used = { level = "warn", priority = 0 }                 # Prefer ? or expect
-get-unwrap = { level = "warn", priority = 0 }
+unwrap_used = { level = "warn", priority = 0 }                 # Prefer ? or expect
+get_unwrap = { level = "warn", priority = 0 }
 panic = { level = "warn", priority = 0 }
 todo = { level = "warn", priority = 0 }
 unimplemented = { level = "warn", priority = 0 }
 unreachable = { level = "warn", priority = 0 }
-unwrap-in-result = { level = "warn", priority = 0 }
-panic-in-result-fn = { level = "warn", priority = 0 }
-let-underscore-future = { level = "warn", priority = 0 }
-unused-result-ok = { level = "warn", priority = 0 }
-map-err-ignore = { level = "warn", priority = 0 }
-assertions-on-result-states = { level = "warn", priority = 0 }
-fallible-impl-from = { level = "warn", priority = 0 }
-infallible-try-from = { level = "warn", priority = 0 }
+unwrap_in_result = { level = "warn", priority = 0 }
+panic_in_result_fn = { level = "warn", priority = 0 }
+let_underscore_future = { level = "warn", priority = 0 }
+unused_result_ok = { level = "warn", priority = 0 }
+map_err_ignore = { level = "warn", priority = 0 }
+assertions_on_result_states = { level = "warn", priority = 0 }
+fallible_impl_from = { level = "warn", priority = 0 }
+infallible_try_from = { level = "warn", priority = 0 }
 
 # Idioms & Style
-redundant-clone = { level = "warn", priority = -4 }
-derive-partial-eq-without-eq = { level = "warn", priority = -5 }
-unnecessary-struct-initialization = { level = "warn", priority = -6 }
-redundant-pub-crate = { level = "warn", priority = -7 }
-missing-const-for-fn = { level = "deny", priority = -9 }
-needless-raw-strings = { level = "warn", priority = -11 }
-branches-sharing-code = { level = "warn", priority = -11 }
-unused-trait-names = { level = "warn", priority = -12 }
-min-ident-chars = { level = "warn", priority = -12 }
-or-fun-call = { level = "warn", priority = 0 }
-path-buf-push-overwrite = { level = "deny", priority = 0 }
-uninlined-format-args = { level = "allow", priority = 0 }
-unchecked-time-subtraction = { level = "deny", priority = 0 }
-use-self = { level = "warn", priority = 0 }
-useless-let-if-seq = { level = "warn", priority = 0 }
-str-to-string = { level = "warn", priority = 0 }
-if-then-some-else-none = { level = "warn", priority = 0 }
-equatable-if-let = { level = "warn", priority = 0 }
+redundant_clone = { level = "warn", priority = -4 }
+derive_partial_eq_without_eq = { level = "warn", priority = -5 }
+unnecessary_struct_initialization = { level = "warn", priority = -6 }
+redundant_pub_crate = { level = "warn", priority = -7 }
+missing_const_for_fn = { level = "deny", priority = -9 }
+needless_raw_strings = { level = "warn", priority = -11 }
+branches_sharing_code = { level = "warn", priority = -11 }
+unused_trait_names = { level = "warn", priority = -12 }
+min_ident_chars = { level = "warn", priority = -12 }
+or_fun_call = { level = "warn", priority = 0 }
+path_buf_push_overwrite = { level = "deny", priority = 0 }
+uninlined_format_args = { level = "allow", priority = 0 }
+unchecked_time_subtraction = { level = "deny", priority = 0 }
+use_self = { level = "warn", priority = 0 }
+useless_let_if_seq = { level = "warn", priority = 0 }
+str_to_string = { level = "warn", priority = 0 }
+if_then_some_else_none = { level = "warn", priority = 0 }
+equatable_if_let = { level = "warn", priority = 0 }
 enum_glob_use = { level = "warn", priority = 0 }
-needless-pass-by-ref-mut = { level = "warn", priority = 0 }
-needless-type-cast = { level = "warn", priority = 0 }
-debug-assert-with-mut-call = { level = "warn", priority = 0 }
-expl-impl-clone-on-copy = { level = "warn", priority = 0 }
-dbg-macro = { level = "warn", priority = 0 }
-allow-attributes = { level = "warn", priority = 0 }
-allow-attributes-without-reason = { level = "warn", priority = 0 }
+needless_pass_by_ref_mut = { level = "warn", priority = 0 }
+needless_type_cast = { level = "warn", priority = 0 }
+debug_assert_with_mut_call = { level = "warn", priority = 0 }
+expl_impl_clone_on_copy = { level = "warn", priority = 0 }
+dbg_macro = { level = "warn", priority = 0 }
+allow_attributes = { level = "warn", priority = 0 }
+allow_attributes_without_reason = { level = "warn", priority = 0 }
 arithmetic_side_effects = { level = "warn", priority = 0 }
 
 # Restriction
@@ -186,20 +186,20 @@ nonstandard_macro_braces = { level = "warn", priority = 0 }
 
 # rustc lints (not exposed through clippy)
 [lints.rust]
-unsafe-code = "forbid"
-missing-docs = "warn"
-missing-copy-implementations = "warn"
-trivial-casts = "warn"
-trivial-numeric-casts = "warn"
-variant-size-differences = "warn"
-single-use-lifetimes = "warn"
-unused-lifetimes = "warn"
-unused-macro-rules = "warn"
-meta-variable-misuse = "warn"
-unit-bindings = "warn"
-absolute-paths-not-starting-with-crate = "warn"
-if-let-rescope = "warn"
-tail-expr-drop-order = "warn"
+unsafe_code = "forbid"
+missing_docs = "warn"
+missing_copy_implementations = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+variant_size_differences = "warn"
+single_use_lifetimes = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+meta_variable_misuse = "warn"
+unit_bindings = "warn"
+absolute_paths_not_starting_with_crate = "warn"
+if_let_rescope = "warn"
+tail_expr_drop_order = "warn"
 
 # The profile that 'dist' will build with
 [profile.dist]
